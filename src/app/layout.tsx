@@ -1,4 +1,5 @@
 import './globals.css';
+import { Header } from '@/components/layout/Header';
 import { inter } from '@/lib/fonts';
 import { AppProviders } from '@/providers/AppProviders';
 
@@ -8,7 +9,10 @@ const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
     return (
         <html lang="fr" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
             <body className="flex min-h-full flex-col bg-background text-foreground">
-                <AppProviders>{children}</AppProviders>
+                <AppProviders>
+                    <Header />
+                    {children}
+                </AppProviders>
             </body>
         </html>
     );

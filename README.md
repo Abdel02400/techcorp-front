@@ -200,9 +200,12 @@ L'adaptateur [src/queries/unwrapResponse.ts](src/queries/unwrapResponse.ts) conv
 
 ```
 src/
-├── app/                     # Routes App Router (Dashboard, Tools, Analytics)
-│   ├── layout.tsx           # root layout, enveloppe l'app dans <AppProviders>
-│   ├── page.tsx
+├── app/                     # Routes App Router
+│   ├── layout.tsx           # root layout (Header + <AppProviders>)
+│   ├── page.tsx             # Dashboard (/)
+│   ├── tools/page.tsx       # Tools catalogue (/tools)
+│   ├── analytics/page.tsx   # Analytics (/analytics)
+│   ├── settings/page.tsx    # Settings (/settings)
 │   └── globals.css          # Tailwind v4 @theme + tokens shadcn
 ├── api/                     # Couche d'accès API
 │   ├── config.ts            # apiBaseUrl (lit NEXT_PUBLIC_API_URL)
@@ -231,7 +234,11 @@ src/
 │   ├── userToolsQueries.ts
 │   └── analyticsQueries.ts
 ├── components/
-│   └── ui/                  # Composants shadcn (Button, ...)
+│   ├── ui/                  # Composants shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator)
+│   ├── layout/              # Shell applicatif partagé (Header, Navigation, ThemeToggle, UserMenu, MobileMenu, BrandMark)
+│   └── common/              # Composants transverses (ComingSoon, ...)
+├── hooks/                   # Hooks non-data
+│   └── useMounted.ts        # Guard d'hydratation (useSyncExternalStore)
 ├── lib/
 │   ├── brand.ts             # BRAND (name, productName, tagline)
 │   ├── env.ts               # isDev / isProd / isTest (tree-shakés au build)
@@ -243,7 +250,7 @@ src/
     └── AppProviders.tsx     # ThemeProvider + QueryClientProvider + Devtools
 ```
 
-> La structure va encore s'étoffer : `hooks/` (hooks non-data), `components/` (composants custom header, kpi-card, tools-table, etc.).
+> La structure va encore s'étoffer : `components/dashboard/`, `components/tools/`, `components/analytics/` au fil des jours 6-7-8.
 
 ---
 
@@ -263,6 +270,7 @@ Les données proviennent d'un JSON server mis à disposition :
 - [x] **Jour 0 — Foundation (providers)** : `AppProviders` (next-themes + TanStack Query + Devtools), layout root avec `suppressHydrationWarning`, configuration `NEXT_PUBLIC_API_URL`, police Inter, constante `BRAND`
 - [x] **Jour 0 — Foundation (API layer)** : `RequestManager`, 5 DTOs, 5 services (`toolsService`, `usersService`, `departmentsService`, `userToolsService`, `analyticsService`), validators Zod génériques + enums de domaine, factory `getServerQueryClient` per-request
 - [x] **Jour 0 — Foundation (query options)** : `src/queries/*` — 5 namespaces de query options partagées serveur/client (`toolsQueries`, `usersQueries`, `departmentsQueries`, `userToolsQueries`, `analyticsQueries`), consommables via `prefetchQuery` (serveur) et `useSuspenseQuery` (client) ; adaptateur `unwrapResponse` qui convertit `Response<T>` en throw pour rester compatible avec le protocole d'erreur TanStack Query
-- [ ] **Jour 6 — Dashboard** : design system de base, header, 4 KPI cards, table Recent Tools, responsive, theme toggle
+- [x] **Jour 6 — Shell applicatif** : `Header` partagé avec `BrandMark`, `Navigation` (4 items + état actif via `usePathname`), search bar, `ThemeToggle` (Light / Dark / System via next-themes, guardé par `useMounted`/`useSyncExternalStore`), notifications, lien settings, `UserMenu` (avatar + dropdown), `MobileMenu` (drawer Sheet) ; pages stub `ComingSoon` pour /tools, /analytics, /settings
+- [ ] **Jour 6 — Dashboard** : 4 KPI cards + table Recent Tools (data + Suspense + skeletons)
 - [ ] **Jour 7 — Tools** : catalogue complet, filtres avancés, CRUD, bulk operations
 - [ ] **Jour 8 — Analytics** : charts (cost + usage), insights, navigation cross-page
