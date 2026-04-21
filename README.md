@@ -234,11 +234,12 @@ src/
 │   ├── userToolsQueries.ts
 │   └── analyticsQueries.ts
 ├── components/
-│   ├── ui/                  # Composants shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator, Card, Skeleton, Table, Select, Dialog, Label, Textarea, Sonner)
+│   ├── ui/                  # Composants shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator, Card, Skeleton, Table, Select, Dialog, Label, Textarea, Sonner, Chart)
 │   ├── layout/              # Shell applicatif partagé (Header, HeaderSearch, Navigation, ThemeToggle, UserMenu, MobileMenu, BrandMark)
 │   ├── common/              # Composants transverses (ComingSoon, StatusBadge, ToolIcon)
 │   ├── dashboard/           # KpiCard, KpisSection, KpisSkeleton, RecentToolsSection, RecentToolsTable, RecentToolsSkeleton
-│   └── tools/               # ToolsTable, ToolsSkeleton, ToolsFilters, ToolsFiltersSkeleton, ToolForm, ToolFormDialog, DeleteToolDialog, ToolActionsDropdown, AddToolButton
+│   ├── tools/               # ToolsTable, ToolsSkeleton, ToolsFilters, ToolsFiltersSkeleton, ToolForm, ToolFormDialog, DeleteToolDialog, ToolActionsDropdown, AddToolButton
+│   └── analytics/           # BudgetOverviewCard, DepartmentCostChart, StatusDistributionChart, TopExpensiveToolsChart, AnalyticsSkeleton
 ├── hooks/                   # Hooks non-data
 │   ├── useMounted.ts        # Guard d'hydratation (useSyncExternalStore)
 │   └── useToolMutations.ts  # useCreateTool / useUpdateTool / useDeleteTool / useToggleToolStatus
@@ -281,5 +282,5 @@ Les données proviennent d'un JSON server mis à disposition :
 - [x] **Jour 7 — Tools filters** : toolbar au-dessus de la table, 3 dropdowns (`Department`, `Status`, `Category` — options Department/Category dérivées des `owner_department` / `category` uniques des tools, `sort()` alphabétique) + range Min/Max Cost en deux `<Input type="number">`. Tout l'état est URL-backed (`?department=...&status=...&category=...&min_cost=100&max_cost=500`). Bouton `Clear filters` qui apparaît conditionnellement et preserve `?search=` (c'est de la recherche, pas un filtre). Filtres appliqués dans `ToolsTable.tsx` via un `useMemo` unique qui combine recherche + dropdowns + range. Skeleton dédié (`ToolsFiltersSkeleton`) dans la même `<Card>` que la table, séparés par une bordure.
 - [x] **Jour 7 — Tools management (CRUD per-row)** : bouton "Add Tool" dans le header de page ouvre un `<Dialog>` avec `ToolForm` (react-hook-form + `standardSchemaResolver` sur `toolInputSchema` — standard-schema path parce que `zodResolver` galère avec Zod 4.3.x internal version bump). Chaque ligne expose un `ToolActionsDropdown` : **Edit** ré-ouvre le même dialog pré-rempli, **Disable/Enable** toggle le status sans confirmation, **Delete** ouvre `DeleteToolDialog` avec confirmation. 4 mutations dans `useToolMutations.ts` (`useCreateTool`, `useUpdateTool`, `useDeleteTool`, `useToggleToolStatus`) qui invalident le scope `['tools']` on success et affichent un toast Sonner (success/error) selon le résultat. `<Toaster />` monté dans `AppProviders`. Schéma `toolInputSchema` + type `ToolInput` exportés du DTO.
 - [ ] **Jour 7 — Tools bulk ops** (optionnel) : multi-select + bulk actions
-- [ ] **Jour 8 — Analytics** : charts (cost + usage), insights, navigation cross-page
-- [ ] **Jour 8 — Analytics** : charts (cost + usage), insights, navigation cross-page
+- [x] **Jour 8 — Analytics (core)** : page `/analytics` avec 4 sections : (1) `BudgetOverviewCard` (valeur absolue + limite + progress bar gradient dont la tonalité tourne amber/rose selon l'utilisation), (2) `DepartmentCostChart` (donut Recharts, `monthly_cost` sommé par `owner_department` sur les tools actifs), (3) `StatusDistributionChart` (pie, compte active/expiring/unused avec les mêmes couleurs que `StatusBadge`), (4) `TopExpensiveToolsChart` (horizontal bar, top 10 par `monthly_cost`). Prefetch serveur (`analyticsQueries.get` + `toolsQueries.all`) + `HydrationBoundary` + `<Suspense fallback={<AnalyticsSkeleton />}>` unique qui englobe tout. Charts = **shadcn Chart** (wrapper sur Recharts) pour rester cohérent avec le design system ; tokens `--chart-1` à `--chart-5` de `globals.css` passés d'un scale grayscale à une palette OKLCH colorée (emerald / violet / orange / rose / amber), en sync light et dark mode. Tooltips et légende stylés par shadcn Chart.
+- [ ] **Jour 8 — Analytics (optionnel)** : usage analytics (adoption rates, most/least used, growth trends) + insights (unused tool alerts, ROI projections) + cross-page nav (click chart segment → `/tools?status=...`)
