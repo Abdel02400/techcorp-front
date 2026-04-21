@@ -19,6 +19,8 @@ export const HeaderSearch = () => {
 
     useEffect(() => {
         if (!isEnabled) return;
+        const currentInUrl = searchParams.get(SEARCH_PARAM) ?? '';
+        if (currentInUrl === value) return;
         const timer = setTimeout(() => {
             const params = new URLSearchParams(searchParams.toString());
             if (value) params.set(SEARCH_PARAM, value);

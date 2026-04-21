@@ -34,7 +34,8 @@ abstract class RequestManager {
 
             if (!request.ok) return { status: ResponseStatus.Ko, message: `HTTP ${request.status}` };
 
-            const json = await request.json();
+            const text = await request.text();
+            const json = text ? JSON.parse(text) : null;
             const parsed = schema.safeParse(json);
             if (!parsed.success) return { status: ResponseStatus.Ko, message: `Invalid response shape: ${parsed.error.issues.map((issue) => `${issue.path.join('.')} ${issue.message}`).join('; ')}` };
 

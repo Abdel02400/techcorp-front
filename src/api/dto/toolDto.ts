@@ -28,3 +28,18 @@ export const toolListSchema = z.array(z.unknown()).transform((items): ToolDto[] 
         return acc;
     }, []);
 });
+
+export const toolInputSchema = z.object({
+    name: z.string().min(1, 'Name is required'),
+    vendor: z.string().optional(),
+    category: z.string().optional(),
+    owner_department: z.string().optional(),
+    status: toolStatusSchema,
+    monthly_cost: z.number('Monthly cost is required').nonnegative('Monthly cost must be positive'),
+    active_users_count: z.number('User count is required').int('Must be a whole number').nonnegative('User count must be positive'),
+    website_url: z.union([z.literal(''), z.url('Invalid URL')]).optional(),
+    icon_url: z.union([z.literal(''), z.url('Invalid URL')]).optional(),
+    description: z.string().optional(),
+});
+
+export type ToolInput = z.infer<typeof toolInputSchema>;

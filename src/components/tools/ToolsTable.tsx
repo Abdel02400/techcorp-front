@@ -1,13 +1,11 @@
 'use client';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { MoreHorizontal } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { ToolIcon } from '@/components/common/ToolIcon';
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ToolActionsDropdown } from '@/components/tools/ToolActionsDropdown';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency, formatRelativeTime } from '@/lib/format';
 import { toolsQueries } from '@/queries/toolsQueries';
@@ -85,20 +83,7 @@ export const ToolsTable = () => {
                             <StatusBadge status={tool.status} />
                         </TableCell>
                         <TableCell>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="size-8" aria-label={`Actions for ${tool.name}`} />}>
-                                    <MoreHorizontal className="size-4" />
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem disabled>View details</DropdownMenuItem>
-                                    <DropdownMenuItem disabled>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem disabled>{tool.status === 'active' ? 'Disable' : 'Enable'}</DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem disabled variant="destructive">
-                                        Delete
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <ToolActionsDropdown tool={tool} />
                         </TableCell>
                     </TableRow>
                 ))}

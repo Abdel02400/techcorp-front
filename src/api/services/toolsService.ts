@@ -1,4 +1,5 @@
-import { toolDtoSchema, toolListSchema, type ToolDto } from '@/api/dto/toolDto';
+import { z } from 'zod';
+import { toolDtoSchema, toolListSchema, type ToolDto, type ToolInput } from '@/api/dto/toolDto';
 import { ResponseStatus, type Response } from '@/api/http';
 import RequestManager from '@/api/requestManager';
 import type { ToolStatus } from '@/validators/enums';
@@ -22,6 +23,24 @@ class ToolsService extends RequestManager {
 
     public async getById(id: number): Promise<Response<ToolDto>> {
         return this.request(`/${id}`, toolDtoSchema);
+    }
+
+    public async create(input: ToolInput): Promise<Response<ToolDto>> {
+        return this.request('', toolDtoSchema, {
+            method: 'POST',
+            body: JSON.stringify(input),
+        });
+    }
+
+    public async update(id: number, input: Partial<ToolInput>): Promise<Response<ToolDto>> {
+        return this.request(`/${id}`, toolDtoSchema, {
+            method: 'PATCH',
+            body: JSON.stringify(input),
+        });
+    }
+
+    public async remove(id: number): Promise<Response<unknown>> {
+        return this.request(`/${id}`, z.unknown(), { method: 'DELETE' });
     }
 }
 

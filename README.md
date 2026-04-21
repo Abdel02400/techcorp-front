@@ -234,13 +234,14 @@ src/
 │   ├── userToolsQueries.ts
 │   └── analyticsQueries.ts
 ├── components/
-│   ├── ui/                  # Composants shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator, Card, Skeleton, Table, Select)
+│   ├── ui/                  # Composants shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator, Card, Skeleton, Table, Select, Dialog, Label, Textarea, Sonner)
 │   ├── layout/              # Shell applicatif partagé (Header, HeaderSearch, Navigation, ThemeToggle, UserMenu, MobileMenu, BrandMark)
 │   ├── common/              # Composants transverses (ComingSoon, StatusBadge, ToolIcon)
 │   ├── dashboard/           # KpiCard, KpisSection, KpisSkeleton, RecentToolsSection, RecentToolsTable, RecentToolsSkeleton
-│   └── tools/               # ToolsTable, ToolsSkeleton, ToolsFilters, ToolsFiltersSkeleton
+│   └── tools/               # ToolsTable, ToolsSkeleton, ToolsFilters, ToolsFiltersSkeleton, ToolForm, ToolFormDialog, DeleteToolDialog, ToolActionsDropdown, AddToolButton
 ├── hooks/                   # Hooks non-data
-│   └── useMounted.ts        # Guard d'hydratation (useSyncExternalStore)
+│   ├── useMounted.ts        # Guard d'hydratation (useSyncExternalStore)
+│   └── useToolMutations.ts  # useCreateTool / useUpdateTool / useDeleteTool / useToggleToolStatus
 ├── lib/
 │   ├── brand.ts             # BRAND (name, productName, tagline)
 │   ├── env.ts               # isDev / isProd / isTest (tree-shakés au build)
@@ -278,5 +279,7 @@ Les données proviennent d'un JSON server mis à disposition :
 - [x] **Jour 6 — Recent Tools** : table 5 colonnes (Tool + icône, Department, Users, Monthly Cost, Status) alimentée par `toolsQueries.recent(8)`, `<Suspense>` dédiée à l'intérieur de la `Card` (header "Recent Tools" + "Last 30 days" toujours visible pendant le loading), fallback skeleton mimant la vraie table, `StatusBadge` réutilisable (3 variantes gradient : active / expiring / unused), `ToolIcon` qui tente `<img>` puis bascule sur l'initiale via `onError`. Alignement numérique via `tabular-nums`, responsive via l'`overflow-x-auto` natif de la Table shadcn. **Stratégie d'over-fetch** dans `toolsService.getRecent` : le service demande `limit * 4` à l'API puis slice top `limit` après validation Zod, parce que les plus récents tools contiennent beaucoup de junk/test data (status en majuscule, champs manquants) qui se fait drop par le parser tolérant — sans cet over-fetch on afficherait seulement 2-3 tools valides.
 - [x] **Jour 7 — Tools catalog (display)** : page `/tools` avec table 8 colonnes (Tool + icon + description, Category, Department, Users, Monthly Cost, Last updated relative, Status, Actions placeholder), prefetch serveur `toolsQueries.all` + `HydrationBoundary` + `<Suspense>` avec skeleton dédié, filtrage client-side par nom/description/vendor via `useSearchParams('search')`, wrapper `Card` avec `px-6 py-4` pour l'alignement. Search bar du header refactorée en `HeaderSearch` : client component qui lit/écrit le query param `?search=` avec debounce 300ms, activée uniquement sur `/tools` (disabled ailleurs, placeholder adaptatif), wrappée dans une `<Suspense>` dans le Header pour permettre la prerender statique des autres routes.
 - [x] **Jour 7 — Tools filters** : toolbar au-dessus de la table, 3 dropdowns (`Department`, `Status`, `Category` — options Department/Category dérivées des `owner_department` / `category` uniques des tools, `sort()` alphabétique) + range Min/Max Cost en deux `<Input type="number">`. Tout l'état est URL-backed (`?department=...&status=...&category=...&min_cost=100&max_cost=500`). Bouton `Clear filters` qui apparaît conditionnellement et preserve `?search=` (c'est de la recherche, pas un filtre). Filtres appliqués dans `ToolsTable.tsx` via un `useMemo` unique qui combine recherche + dropdowns + range. Skeleton dédié (`ToolsFiltersSkeleton`) dans la même `<Card>` que la table, séparés par une bordure.
-- [ ] **Jour 7 — Tools management** : Add Tool dialog + per-row actions + bulk select + CRUD mutations
+- [x] **Jour 7 — Tools management (CRUD per-row)** : bouton "Add Tool" dans le header de page ouvre un `<Dialog>` avec `ToolForm` (react-hook-form + `standardSchemaResolver` sur `toolInputSchema` — standard-schema path parce que `zodResolver` galère avec Zod 4.3.x internal version bump). Chaque ligne expose un `ToolActionsDropdown` : **Edit** ré-ouvre le même dialog pré-rempli, **Disable/Enable** toggle le status sans confirmation, **Delete** ouvre `DeleteToolDialog` avec confirmation. 4 mutations dans `useToolMutations.ts` (`useCreateTool`, `useUpdateTool`, `useDeleteTool`, `useToggleToolStatus`) qui invalident le scope `['tools']` on success et affichent un toast Sonner (success/error) selon le résultat. `<Toaster />` monté dans `AppProviders`. Schéma `toolInputSchema` + type `ToolInput` exportés du DTO.
+- [ ] **Jour 7 — Tools bulk ops** (optionnel) : multi-select + bulk actions
+- [ ] **Jour 8 — Analytics** : charts (cost + usage), insights, navigation cross-page
 - [ ] **Jour 8 — Analytics** : charts (cost + usage), insights, navigation cross-page
