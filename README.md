@@ -28,10 +28,21 @@ Prérequis : Node.js >= 20.9 et pnpm.
 
 ```bash
 pnpm install
+cp .env.local.example .env.local   # dupliquer et ajuster si besoin
 pnpm dev
 ```
 
 L'application est disponible sur [http://localhost:3000](http://localhost:3000).
+
+## Variables d'environnement
+
+Le fichier `.env.local` (git-ignoré) est requis au lancement. Le fichier `.env.local.example` (committé) sert de template — duplique-le en `.env.local` et adapte les valeurs si nécessaire.
+
+| Variable              | Description                               | Valeur par défaut                         |
+| --------------------- | ----------------------------------------- | ----------------------------------------- |
+| `NEXT_PUBLIC_API_URL` | URL de base du JSON server des ressources | `https://tt-jsonserver-01.alt-tools.tech` |
+
+> Toutes les variables préfixées `NEXT_PUBLIC_` sont inlinées dans le bundle client au build — aucune valeur sensible ne doit y figurer.
 
 ## Scripts disponibles
 
@@ -81,21 +92,110 @@ L'application est disponible sur [http://localhost:3000](http://localhost:3000).
 
 ---
 
+## Architecture
+
+### API Layer
+
+La couche d'accès à l'API est organisée en 4 briques : une classe de base `RequestManager`, des services typés qui l'étendent, des DTOs validés par Zod, et des validateurs partagés.
+
+**Contrat de retour uniforme.** Chaque méthode de service retourne une `Response<T>` — discriminated union — plutôt que throw :
+
+```ts
+// src/api/http.ts
+export type OkResponse<T> = { status: ResponseStatus.Ok; data: T };
+export type KoResponse = { status: ResponseStatus.Ko; message?: string };
+export type Response<T> = OkResponse<T> | KoResponse;
+```
+
+Côté consommateur, un simple narrow TS donne l'accès typé à la donnée :
+
+```ts
+const response = await toolsService.getRecent(8);
+if (response.status === ResponseStatus.Ko) {
+    /* gestion d'erreur */
+}
+// ici response.data: ToolDto[] — garanti par le type système
+```
+
+**`RequestManager` (abstract).** Factorise la construction d'URL (avec query params), les headers par défaut, l'appel `fetch`, la validation Zod et le wrapping `Response<T>`. Chaque service n'a plus qu'à déclarer son `basePath` et ses méthodes métier :
+
+```ts
+class ToolsService extends RequestManager {
+    protected readonly basePath = '/tools';
+
+    public async getRecent(limit = 8): Promise<Response<ToolDto[]>> {
+        return this.request('', toolListSchema, { params: { _sort: 'updated_at', _order: 'desc', _limit: limit } });
+    }
+}
+export const toolsService = new ToolsService();
+```
+
+**DTOs (`src/api/dto/`).** Chaque ressource a son schéma Zod, et le type TS est inféré via `z.infer` — source de vérité unique. Les schémas composent les validateurs partagés (`idSchema`, `isoDateTimeSchema`, `urlSchema`, etc. dans [src/validators/commonSchemas.ts](src/validators/commonSchemas.ts)) et les enums de domaine (`toolStatusSchema`, `usageFrequencySchema`, `proficiencyLevelSchema` dans [src/validators/enums.ts](src/validators/enums.ts)).
+
+Services disponibles : `toolsService`, `usersService`, `departmentsService`, `userToolsService`, `analyticsService`.
+
+### Data Fetching Strategy — SSR + Streaming + Suspense
+
+Ce projet utilise le pattern officiel TanStack Query × Next App Router pour maximiser le rendu initial :
+
+1. **Prefetch serveur.** Chaque Server Component qui dépend de données lance `queryClient.prefetchQuery(toolsQueries.recent(8))` **sans l'await** — le fetch démarre au début du render, en parallèle du rendu de la page.
+2. **Dehydration.** L'arbre est enveloppé dans `<HydrationBoundary state={dehydrate(queryClient)}>` — l'état TanStack Query est sérialisé et transmis au client.
+3. **Suspense boundary.** Chaque zone dépendante de données est wrappée dans `<Suspense fallback={<Skeleton />}>` pour activer le streaming HTML.
+4. **Consommation client.** Les Client Components consomment la data via `useSuspenseQuery(options)` (pas `useQuery`) — qui throw une promesse tant que la data n'est pas prête, ce qui déclenche le Suspense.
+
+**Résultat UX :**
+
+- Si le prefetch serveur **termine avant** que le shell soit entièrement streamé → la page arrive avec la data déjà peinte dans le HTML, zéro flash de loading.
+- Si le prefetch est **encore en cours** quand le shell est prêt → Next streame le shell + skeleton immédiatement, puis envoie le bloc data dès que la query résout (streaming HTML progressif).
+- Après hydratation, TanStack Query prend le relais côté client pour les refetch / invalidations / mutations.
+
+**Sous le capot.** Le `QueryClient` côté serveur est instancié **par requête** via `React.cache` dans [src/lib/queryClient.ts](src/lib/queryClient.ts) — garantit qu'il n'y a pas de partage de cache entre utilisateurs en production. Côté client, un `QueryClient` dédié est instancié une seule fois via `useState` dans [AppProviders](src/providers/AppProviders.tsx). Les deux factories partagent `QUERY_STALE_TIME_MS` comme source de vérité pour la durée de fraîcheur.
+
+Les **query options** partagées entre serveur et client (même `queryKey`, même `queryFn`) vivent dans `src/queries/` (arrivent au commit suivant).
+
+---
+
 ## Structure du projet
 
 ```
 src/
-├── app/             # Routes App Router (Dashboard, Tools, Analytics)
-│   ├── layout.tsx
+├── app/                     # Routes App Router (Dashboard, Tools, Analytics)
+│   ├── layout.tsx           # root layout, enveloppe l'app dans <AppProviders>
 │   ├── page.tsx
-│   └── globals.css  # Tailwind v4 @theme + tokens shadcn
+│   └── globals.css          # Tailwind v4 @theme + tokens shadcn
+├── api/                     # Couche d'accès API
+│   ├── config.ts            # apiBaseUrl (lit NEXT_PUBLIC_API_URL)
+│   ├── http.ts              # Response<T>, ResponseStatus
+│   ├── requestManager.ts    # Classe de base abstraite
+│   ├── dto/                 # Schémas Zod + types inférés par ressource
+│   │   ├── toolDto.ts
+│   │   ├── userDto.ts
+│   │   ├── departmentDto.ts
+│   │   ├── userToolDto.ts
+│   │   └── analyticsDto.ts
+│   └── services/            # Services typés (singletons)
+│       ├── toolsService.ts
+│       ├── usersService.ts
+│       ├── departmentsService.ts
+│       ├── userToolsService.ts
+│       └── analyticsService.ts
+├── validators/              # Schémas Zod partagés
+│   ├── commonSchemas.ts     # id, isoDate, url, email, nonNegativeNumber, ...
+│   └── enums.ts             # toolStatus, usageFrequency, proficiencyLevel
 ├── components/
-│   └── ui/          # Composants shadcn (Button, ...)
-└── lib/
-    └── utils.ts     # Helper cn()
+│   └── ui/                  # Composants shadcn (Button, ...)
+├── lib/
+│   ├── brand.ts             # BRAND (name, productName, tagline)
+│   ├── env.ts               # isDev / isProd / isTest (tree-shakés au build)
+│   ├── fonts.ts             # Police Inter (liée à --font-sans)
+│   ├── metadata.ts          # rootMetadata
+│   ├── queryClient.ts       # Factories serveur/client + QUERY_STALE_TIME_MS + getServerQueryClient (React.cache)
+│   └── utils.ts             # Helper cn()
+└── providers/
+    └── AppProviders.tsx     # ThemeProvider + QueryClientProvider + Devtools
 ```
 
-> La structure va s'étoffer au fil des 3 jours : `hooks/` (data fetching), `types/` (modèles partagés), `components/` (composants custom header, kpi-card, tools-table, etc.).
+> La structure va encore s'étoffer : `queries/` (query options partagées), `hooks/` (hooks non-data), `components/` (composants custom header, kpi-card, tools-table, etc.).
 
 ---
 
@@ -112,6 +212,9 @@ Les données proviennent d'un JSON server mis à disposition :
 ## Roadmap
 
 - [x] **Jour 0 — Setup** : scaffold Next 16, stack complète, tooling (ESLint + Prettier)
+- [x] **Jour 0 — Foundation (providers)** : `AppProviders` (next-themes + TanStack Query + Devtools), layout root avec `suppressHydrationWarning`, configuration `NEXT_PUBLIC_API_URL`, police Inter, constante `BRAND`
+- [x] **Jour 0 — Foundation (API layer)** : `RequestManager`, 5 DTOs, 5 services (`toolsService`, `usersService`, `departmentsService`, `userToolsService`, `analyticsService`), validators Zod génériques + enums de domaine, factory `getServerQueryClient` per-request
+- [ ] **Jour 0 — Foundation (query options)** : `src/queries/*` — query options partagées serveur/client, consommées via `prefetchQuery` (serveur) et `useSuspenseQuery` (client)
 - [ ] **Jour 6 — Dashboard** : design system de base, header, 4 KPI cards, table Recent Tools, responsive, theme toggle
 - [ ] **Jour 7 — Tools** : catalogue complet, filtres avancés, CRUD, bulk operations
 - [ ] **Jour 8 — Analytics** : charts (cost + usage), insights, navigation cross-page
