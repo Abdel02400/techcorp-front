@@ -2,6 +2,7 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { KpisSection } from '@/components/dashboard/KpisSection';
 import { KpisSkeleton } from '@/components/dashboard/KpisSkeleton';
+import { RecentToolsSection } from '@/components/dashboard/RecentToolsSection';
 import { BRAND } from '@/lib/brand';
 import { getServerQueryClient } from '@/lib/queryClient';
 import { analyticsQueries } from '@/queries/analyticsQueries';
@@ -12,6 +13,7 @@ const DashboardPage = () => {
     const queryClient = getServerQueryClient();
     void queryClient.prefetchQuery(analyticsQueries.get());
     void queryClient.prefetchQuery(toolsQueries.all());
+    void queryClient.prefetchQuery(toolsQueries.recent(8));
     void queryClient.prefetchQuery(departmentsQueries.all());
 
     return (
@@ -21,9 +23,12 @@ const DashboardPage = () => {
                 <p className="text-muted-foreground">{BRAND.tagline}</p>
             </div>
             <HydrationBoundary state={dehydrate(queryClient)}>
-                <Suspense fallback={<KpisSkeleton />}>
-                    <KpisSection />
-                </Suspense>
+                <div className="flex flex-col gap-6">
+                    <Suspense fallback={<KpisSkeleton />}>
+                        <KpisSection />
+                    </Suspense>
+                    <RecentToolsSection />
+                </div>
             </HydrationBoundary>
         </main>
     );

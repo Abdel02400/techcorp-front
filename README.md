@@ -234,10 +234,10 @@ src/
 │   ├── userToolsQueries.ts
 │   └── analyticsQueries.ts
 ├── components/
-│   ├── ui/                  # Composants shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator, Card, Skeleton)
+│   ├── ui/                  # Composants shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator, Card, Skeleton, Table)
 │   ├── layout/              # Shell applicatif partagé (Header, Navigation, ThemeToggle, UserMenu, MobileMenu, BrandMark)
-│   ├── common/              # Composants transverses (ComingSoon, ...)
-│   └── dashboard/           # KpiCard, KpisSection, KpisSkeleton
+│   ├── common/              # Composants transverses (ComingSoon, StatusBadge, ToolIcon)
+│   └── dashboard/           # KpiCard, KpisSection, KpisSkeleton, RecentToolsSection, RecentToolsTable, RecentToolsSkeleton
 ├── hooks/                   # Hooks non-data
 │   └── useMounted.ts        # Guard d'hydratation (useSyncExternalStore)
 ├── lib/
@@ -274,6 +274,6 @@ Les données proviennent d'un JSON server mis à disposition :
 - [x] **Jour 0 — Foundation (query options)** : `src/queries/*` — 5 namespaces de query options partagées serveur/client (`toolsQueries`, `usersQueries`, `departmentsQueries`, `userToolsQueries`, `analyticsQueries`), consommables via `prefetchQuery` (serveur) et `useSuspenseQuery` (client) ; adaptateur `unwrapResponse` qui convertit `Response<T>` en throw pour rester compatible avec le protocole d'erreur TanStack Query
 - [x] **Jour 6 — Shell applicatif** : `Header` partagé avec `BrandMark`, `Navigation` (4 items + état actif via `usePathname`), search bar, `ThemeToggle` (Light / Dark / System via next-themes, guardé par `useMounted`/`useSyncExternalStore`), notifications, lien settings, `UserMenu` (avatar + dropdown), `MobileMenu` (drawer Sheet) ; pages stub `ComingSoon` pour /tools, /analytics, /settings
 - [x] **Jour 6 — Dashboard KPIs** : 4 KPI cards (Monthly Budget, Active Tools, Departments, Cost / User) alimentés par 3 queries parallèles (`analyticsQueries.get`, `toolsQueries.all`, `departmentsQueries.all`), prefetch serveur + `HydrationBoundary` + `<Suspense fallback={<KpisSkeleton />}>`, formatage via `formatCurrency` / `formatCurrencyCompact`. `toolDtoSchema` rendu défensif (coerce sur les champs numériques) + parser de liste tolérant qui drop silencieusement les items malformés (la vraie data du JSON server a des incohérences : `active_users_count` tantôt string tantôt number, `monthly_cost` parfois absent, etc.)
-- [ ] **Jour 6 — Dashboard** : table Recent Tools (data + Suspense + skeletons)
+- [x] **Jour 6 — Recent Tools** : table 5 colonnes (Tool + icône, Department, Users, Monthly Cost, Status) alimentée par `toolsQueries.recent(8)`, `<Suspense>` dédiée à l'intérieur de la `Card` (header "Recent Tools" + "Last 30 days" toujours visible pendant le loading), fallback skeleton mimant la vraie table, `StatusBadge` réutilisable (3 variantes gradient : active / expiring / unused), `ToolIcon` qui tente `<img>` puis bascule sur l'initiale via `onError`. Alignement numérique via `tabular-nums`, responsive via l'`overflow-x-auto` natif de la Table shadcn. **Stratégie d'over-fetch** dans `toolsService.getRecent` : le service demande `limit * 4` à l'API puis slice top `limit` après validation Zod, parce que les plus récents tools contiennent beaucoup de junk/test data (status en majuscule, champs manquants) qui se fait drop par le parser tolérant — sans cet over-fetch on afficherait seulement 2-3 tools valides.
 - [ ] **Jour 7 — Tools** : catalogue complet, filtres avancés, CRUD, bulk operations
 - [ ] **Jour 8 — Analytics** : charts (cost + usage), insights, navigation cross-page

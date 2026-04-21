@@ -1,5 +1,5 @@
 import { toolDtoSchema, toolListSchema, type ToolDto } from '@/api/dto/toolDto';
-import type { Response } from '@/api/http';
+import { ResponseStatus, type Response } from '@/api/http';
 import RequestManager from '@/api/requestManager';
 import type { ToolStatus } from '@/validators/enums';
 
@@ -11,7 +11,9 @@ class ToolsService extends RequestManager {
     }
 
     public async getRecent(limit = 8): Promise<Response<ToolDto[]>> {
-        return this.request('', toolListSchema, { params: { _sort: 'updated_at', _order: 'desc', _limit: limit } });
+        const response = await this.request('', toolListSchema, { params: { _sort: 'updated_at', _order: 'desc', _limit: limit * 4 } });
+        if (response.status === ResponseStatus.Ko) return response;
+        return { status: ResponseStatus.Ok, data: response.data.slice(0, limit) };
     }
 
     public async getByStatus(status: ToolStatus): Promise<Response<ToolDto[]>> {
