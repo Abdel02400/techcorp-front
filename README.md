@@ -234,15 +234,17 @@ src/
 │   ├── userToolsQueries.ts
 │   └── analyticsQueries.ts
 ├── components/
-│   ├── ui/                  # Composants shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator)
+│   ├── ui/                  # Composants shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator, Card, Skeleton)
 │   ├── layout/              # Shell applicatif partagé (Header, Navigation, ThemeToggle, UserMenu, MobileMenu, BrandMark)
-│   └── common/              # Composants transverses (ComingSoon, ...)
+│   ├── common/              # Composants transverses (ComingSoon, ...)
+│   └── dashboard/           # KpiCard, KpisSection, KpisSkeleton
 ├── hooks/                   # Hooks non-data
 │   └── useMounted.ts        # Guard d'hydratation (useSyncExternalStore)
 ├── lib/
 │   ├── brand.ts             # BRAND (name, productName, tagline)
 │   ├── env.ts               # isDev / isProd / isTest (tree-shakés au build)
 │   ├── fonts.ts             # Police Inter (liée à --font-sans)
+│   ├── format.ts            # formatCurrency + formatCurrencyCompact (Intl.NumberFormat)
 │   ├── metadata.ts          # rootMetadata
 │   ├── queryClient.ts       # Factories serveur/client + QUERY_STALE_TIME_MS + getServerQueryClient (React.cache)
 │   └── utils.ts             # Helper cn()
@@ -271,6 +273,7 @@ Les données proviennent d'un JSON server mis à disposition :
 - [x] **Jour 0 — Foundation (API layer)** : `RequestManager`, 5 DTOs, 5 services (`toolsService`, `usersService`, `departmentsService`, `userToolsService`, `analyticsService`), validators Zod génériques + enums de domaine, factory `getServerQueryClient` per-request
 - [x] **Jour 0 — Foundation (query options)** : `src/queries/*` — 5 namespaces de query options partagées serveur/client (`toolsQueries`, `usersQueries`, `departmentsQueries`, `userToolsQueries`, `analyticsQueries`), consommables via `prefetchQuery` (serveur) et `useSuspenseQuery` (client) ; adaptateur `unwrapResponse` qui convertit `Response<T>` en throw pour rester compatible avec le protocole d'erreur TanStack Query
 - [x] **Jour 6 — Shell applicatif** : `Header` partagé avec `BrandMark`, `Navigation` (4 items + état actif via `usePathname`), search bar, `ThemeToggle` (Light / Dark / System via next-themes, guardé par `useMounted`/`useSyncExternalStore`), notifications, lien settings, `UserMenu` (avatar + dropdown), `MobileMenu` (drawer Sheet) ; pages stub `ComingSoon` pour /tools, /analytics, /settings
-- [ ] **Jour 6 — Dashboard** : 4 KPI cards + table Recent Tools (data + Suspense + skeletons)
+- [x] **Jour 6 — Dashboard KPIs** : 4 KPI cards (Monthly Budget, Active Tools, Departments, Cost / User) alimentés par 3 queries parallèles (`analyticsQueries.get`, `toolsQueries.all`, `departmentsQueries.all`), prefetch serveur + `HydrationBoundary` + `<Suspense fallback={<KpisSkeleton />}>`, formatage via `formatCurrency` / `formatCurrencyCompact`. `toolDtoSchema` rendu défensif (coerce sur les champs numériques) + parser de liste tolérant qui drop silencieusement les items malformés (la vraie data du JSON server a des incohérences : `active_users_count` tantôt string tantôt number, `monthly_cost` parfois absent, etc.)
+- [ ] **Jour 6 — Dashboard** : table Recent Tools (data + Suspense + skeletons)
 - [ ] **Jour 7 — Tools** : catalogue complet, filtres avancés, CRUD, bulk operations
 - [ ] **Jour 8 — Analytics** : charts (cost + usage), insights, navigation cross-page

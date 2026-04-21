@@ -1,10 +1,7 @@
-import { z } from 'zod';
-import { toolDtoSchema, type ToolDto } from '@/api/dto/toolDto';
+import { toolDtoSchema, toolListSchema, type ToolDto } from '@/api/dto/toolDto';
 import type { Response } from '@/api/http';
 import RequestManager from '@/api/requestManager';
 import type { ToolStatus } from '@/validators/enums';
-
-const toolListSchema = z.array(toolDtoSchema);
 
 class ToolsService extends RequestManager {
     protected readonly basePath = '/tools';
