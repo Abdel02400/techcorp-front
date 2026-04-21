@@ -151,7 +151,48 @@ Ce projet utilise le pattern officiel TanStack Query × Next App Router pour max
 
 **Sous le capot.** Le `QueryClient` côté serveur est instancié **par requête** via `React.cache` dans [src/lib/queryClient.ts](src/lib/queryClient.ts) — garantit qu'il n'y a pas de partage de cache entre utilisateurs en production. Côté client, un `QueryClient` dédié est instancié une seule fois via `useState` dans [AppProviders](src/providers/AppProviders.tsx). Les deux factories partagent `QUERY_STALE_TIME_MS` comme source de vérité pour la durée de fraîcheur.
 
-Les **query options** partagées entre serveur et client (même `queryKey`, même `queryFn`) vivent dans `src/queries/` (arrivent au commit suivant).
+**Query options partagées (`src/queries/`)**. Chaque ressource expose un namespace (`toolsQueries`, `usersQueries`, `departmentsQueries`, `userToolsQueries`, `analyticsQueries`) dont les méthodes retournent un objet `queryOptions` typé — consommable aussi bien côté serveur que côté client :
+
+```ts
+// src/queries/toolsQueries.ts
+export const toolsQueries = {
+    all: () => queryOptions({ queryKey: ['tools', 'all'] as const, queryFn: async () => unwrapResponse(await toolsService.getAll()) }),
+    recent: (limit = 8) => queryOptions({ queryKey: ['tools', 'recent', limit] as const, queryFn: async () => unwrapResponse(await toolsService.getRecent(limit)) }),
+    // ...
+};
+```
+
+Usage côté Server Component :
+
+```tsx
+const queryClient = getServerQueryClient();
+void queryClient.prefetchQuery(toolsQueries.recent(8)); // fire-and-forget
+
+return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+        <Suspense fallback={<RecentToolsSkeleton />}>
+            <RecentToolsSection />
+        </Suspense>
+    </HydrationBoundary>
+);
+```
+
+Usage côté Client Component :
+
+```tsx
+'use client';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { toolsQueries } from '@/queries/toolsQueries';
+
+export const RecentToolsSection = () => {
+    const { data } = useSuspenseQuery(toolsQueries.recent(8));
+    return <ToolsTable tools={data} />;
+};
+```
+
+L'adaptateur [src/queries/unwrapResponse.ts](src/queries/unwrapResponse.ts) convertit le contrat `Response<T>` de nos services (qui ne throw pas) en une valeur `T` ou un `throw` — indispensable parce que TanStack Query attend le protocole throw pour remplir ses états `error` / `isError`.
+
+**Query keys hiérarchiques.** Format `[resource, scope?, ...params]` — permet des invalidations ciblées : `queryClient.invalidateQueries({ queryKey: ['tools'] })` invalide tout le scope `tools`, `{ queryKey: ['tools', 'recent'] }` uniquement les recent, etc.
 
 ---
 
@@ -182,6 +223,13 @@ src/
 ├── validators/              # Schémas Zod partagés
 │   ├── commonSchemas.ts     # id, isoDate, url, email, nonNegativeNumber, ...
 │   └── enums.ts             # toolStatus, usageFrequency, proficiencyLevel
+├── queries/                 # Query options TanStack (server + client)
+│   ├── unwrapResponse.ts    # Adaptateur Response<T> → T (throw sur Ko)
+│   ├── toolsQueries.ts
+│   ├── usersQueries.ts
+│   ├── departmentsQueries.ts
+│   ├── userToolsQueries.ts
+│   └── analyticsQueries.ts
 ├── components/
 │   └── ui/                  # Composants shadcn (Button, ...)
 ├── lib/
@@ -195,7 +243,7 @@ src/
     └── AppProviders.tsx     # ThemeProvider + QueryClientProvider + Devtools
 ```
 
-> La structure va encore s'étoffer : `queries/` (query options partagées), `hooks/` (hooks non-data), `components/` (composants custom header, kpi-card, tools-table, etc.).
+> La structure va encore s'étoffer : `hooks/` (hooks non-data), `components/` (composants custom header, kpi-card, tools-table, etc.).
 
 ---
 
@@ -214,7 +262,7 @@ Les données proviennent d'un JSON server mis à disposition :
 - [x] **Jour 0 — Setup** : scaffold Next 16, stack complète, tooling (ESLint + Prettier)
 - [x] **Jour 0 — Foundation (providers)** : `AppProviders` (next-themes + TanStack Query + Devtools), layout root avec `suppressHydrationWarning`, configuration `NEXT_PUBLIC_API_URL`, police Inter, constante `BRAND`
 - [x] **Jour 0 — Foundation (API layer)** : `RequestManager`, 5 DTOs, 5 services (`toolsService`, `usersService`, `departmentsService`, `userToolsService`, `analyticsService`), validators Zod génériques + enums de domaine, factory `getServerQueryClient` per-request
-- [ ] **Jour 0 — Foundation (query options)** : `src/queries/*` — query options partagées serveur/client, consommées via `prefetchQuery` (serveur) et `useSuspenseQuery` (client)
+- [x] **Jour 0 — Foundation (query options)** : `src/queries/*` — 5 namespaces de query options partagées serveur/client (`toolsQueries`, `usersQueries`, `departmentsQueries`, `userToolsQueries`, `analyticsQueries`), consommables via `prefetchQuery` (serveur) et `useSuspenseQuery` (client) ; adaptateur `unwrapResponse` qui convertit `Response<T>` en throw pour rester compatible avec le protocole d'erreur TanStack Query
 - [ ] **Jour 6 — Dashboard** : design system de base, header, 4 KPI cards, table Recent Tools, responsive, theme toggle
 - [ ] **Jour 7 — Tools** : catalogue complet, filtres avancés, CRUD, bulk operations
 - [ ] **Jour 8 — Analytics** : charts (cost + usage), insights, navigation cross-page
