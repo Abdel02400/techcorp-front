@@ -12,21 +12,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatCurrency, formatRelativeTime } from '@/lib/format';
 import { toolsQueries } from '@/queries/toolsQueries';
 
+const matchesSearch = (search: string, ...fields: (string | undefined)[]): boolean => {
+    return fields.some((field) => field?.toLowerCase().includes(search) ?? false);
+};
+
 export const ToolsTable = () => {
     const { data: tools } = useSuspenseQuery(toolsQueries.all());
     const searchParams = useSearchParams();
-    const search = searchParams.get('search')?.trim().toLowerCase() ?? '';
 
     const filteredTools = useMemo(() => {
-        if (!search) return tools;
-        return tools.filter((tool) => tool.name.toLowerCase().includes(search) || (tool.description?.toLowerCase().includes(search) ?? false) || (tool.vendor?.toLowerCase().includes(search) ?? false));
-    }, [tools, search]);
+        const search = searchParams.get('search')?.trim().toLowerCase() ?? '';
+        const department = searchParams.get('department');
+        const status = searchParams.get('status');
+        const category = searchParams.get('category');
+        const minCostRaw = searchParams.get('min_cost');
+        const maxCostRaw = searchParams.get('max_cost');
+        const minCost = minCostRaw ? Number(minCostRaw) : undefined;
+        const maxCost = maxCostRaw ? Number(maxCostRaw) : undefined;
+
+        return tools.filter((tool) => {
+            if (search && !matchesSearch(search, tool.name, tool.description, tool.vendor)) return false;
+            if (department && tool.owner_department !== department) return false;
+            if (status && tool.status !== status) return false;
+            if (category && tool.category !== category) return false;
+            if (minCost !== undefined && tool.monthly_cost < minCost) return false;
+            if (maxCost !== undefined && tool.monthly_cost > maxCost) return false;
+            return true;
+        });
+    }, [tools, searchParams]);
 
     if (filteredTools.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-                <p className="text-sm font-medium">No tools match your search.</p>
-                <p className="text-sm text-muted-foreground">Try a different keyword or clear the search.</p>
+                <p className="text-sm font-medium">No tools match your filters.</p>
+                <p className="text-sm text-muted-foreground">Try a different keyword or clear the active filters.</p>
             </div>
         );
     }

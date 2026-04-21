@@ -234,11 +234,11 @@ src/
 │   ├── userToolsQueries.ts
 │   └── analyticsQueries.ts
 ├── components/
-│   ├── ui/                  # Composants shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator, Card, Skeleton, Table)
+│   ├── ui/                  # Composants shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator, Card, Skeleton, Table, Select)
 │   ├── layout/              # Shell applicatif partagé (Header, HeaderSearch, Navigation, ThemeToggle, UserMenu, MobileMenu, BrandMark)
 │   ├── common/              # Composants transverses (ComingSoon, StatusBadge, ToolIcon)
 │   ├── dashboard/           # KpiCard, KpisSection, KpisSkeleton, RecentToolsSection, RecentToolsTable, RecentToolsSkeleton
-│   └── tools/               # ToolsTable, ToolsSkeleton
+│   └── tools/               # ToolsTable, ToolsSkeleton, ToolsFilters, ToolsFiltersSkeleton
 ├── hooks/                   # Hooks non-data
 │   └── useMounted.ts        # Guard d'hydratation (useSyncExternalStore)
 ├── lib/
@@ -277,6 +277,6 @@ Les données proviennent d'un JSON server mis à disposition :
 - [x] **Jour 6 — Dashboard KPIs** : 4 KPI cards (Monthly Budget, Active Tools, Departments, Cost / User) alimentés par 3 queries parallèles (`analyticsQueries.get`, `toolsQueries.all`, `departmentsQueries.all`), prefetch serveur + `HydrationBoundary` + `<Suspense fallback={<KpisSkeleton />}>`, formatage via `formatCurrency` / `formatCurrencyCompact`. `toolDtoSchema` rendu défensif (coerce sur les champs numériques) + parser de liste tolérant qui drop silencieusement les items malformés (la vraie data du JSON server a des incohérences : `active_users_count` tantôt string tantôt number, `monthly_cost` parfois absent, etc.)
 - [x] **Jour 6 — Recent Tools** : table 5 colonnes (Tool + icône, Department, Users, Monthly Cost, Status) alimentée par `toolsQueries.recent(8)`, `<Suspense>` dédiée à l'intérieur de la `Card` (header "Recent Tools" + "Last 30 days" toujours visible pendant le loading), fallback skeleton mimant la vraie table, `StatusBadge` réutilisable (3 variantes gradient : active / expiring / unused), `ToolIcon` qui tente `<img>` puis bascule sur l'initiale via `onError`. Alignement numérique via `tabular-nums`, responsive via l'`overflow-x-auto` natif de la Table shadcn. **Stratégie d'over-fetch** dans `toolsService.getRecent` : le service demande `limit * 4` à l'API puis slice top `limit` après validation Zod, parce que les plus récents tools contiennent beaucoup de junk/test data (status en majuscule, champs manquants) qui se fait drop par le parser tolérant — sans cet over-fetch on afficherait seulement 2-3 tools valides.
 - [x] **Jour 7 — Tools catalog (display)** : page `/tools` avec table 8 colonnes (Tool + icon + description, Category, Department, Users, Monthly Cost, Last updated relative, Status, Actions placeholder), prefetch serveur `toolsQueries.all` + `HydrationBoundary` + `<Suspense>` avec skeleton dédié, filtrage client-side par nom/description/vendor via `useSearchParams('search')`, wrapper `Card` avec `px-6 py-4` pour l'alignement. Search bar du header refactorée en `HeaderSearch` : client component qui lit/écrit le query param `?search=` avec debounce 300ms, activée uniquement sur `/tools` (disabled ailleurs, placeholder adaptatif), wrappée dans une `<Suspense>` dans le Header pour permettre la prerender statique des autres routes.
-- [ ] **Jour 7 — Tools filters** : toolbar (Department / Status / Category / Cost range) en URL query params
+- [x] **Jour 7 — Tools filters** : toolbar au-dessus de la table, 3 dropdowns (`Department`, `Status`, `Category` — options Department/Category dérivées des `owner_department` / `category` uniques des tools, `sort()` alphabétique) + range Min/Max Cost en deux `<Input type="number">`. Tout l'état est URL-backed (`?department=...&status=...&category=...&min_cost=100&max_cost=500`). Bouton `Clear filters` qui apparaît conditionnellement et preserve `?search=` (c'est de la recherche, pas un filtre). Filtres appliqués dans `ToolsTable.tsx` via un `useMemo` unique qui combine recherche + dropdowns + range. Skeleton dédié (`ToolsFiltersSkeleton`) dans la même `<Card>` que la table, séparés par une bordure.
 - [ ] **Jour 7 — Tools management** : Add Tool dialog + per-row actions + bulk select + CRUD mutations
 - [ ] **Jour 8 — Analytics** : charts (cost + usage), insights, navigation cross-page

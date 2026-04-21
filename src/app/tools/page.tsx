@@ -1,5 +1,7 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { Suspense } from 'react';
+import { ToolsFilters } from '@/components/tools/ToolsFilters';
+import { ToolsFiltersSkeleton } from '@/components/tools/ToolsFiltersSkeleton';
 import { ToolsSkeleton } from '@/components/tools/ToolsSkeleton';
 import { ToolsTable } from '@/components/tools/ToolsTable';
 import { Card } from '@/components/ui/card';
@@ -18,6 +20,11 @@ const ToolsPage = () => {
             </div>
             <HydrationBoundary state={dehydrate(queryClient)}>
                 <Card className="overflow-hidden py-0">
+                    <div className="border-b border-border/60 px-6 py-4">
+                        <Suspense fallback={<ToolsFiltersSkeleton />}>
+                            <ToolsFilters />
+                        </Suspense>
+                    </div>
                     <div className="px-6 py-4">
                         <Suspense fallback={<ToolsSkeleton />}>
                             <ToolsTable />
