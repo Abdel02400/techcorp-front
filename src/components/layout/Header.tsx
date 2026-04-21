@@ -1,12 +1,13 @@
-import { Bell, Search, Settings } from 'lucide-react';
+import { Bell, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { BrandMark } from '@/components/layout/BrandMark';
+import { HeaderSearch } from '@/components/layout/HeaderSearch';
 import { MobileMenu } from '@/components/layout/MobileMenu';
 import { Navigation } from '@/components/layout/Navigation';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { UserMenu } from '@/components/layout/UserMenu';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 export const Header = () => {
     return (
@@ -17,10 +18,9 @@ export const Header = () => {
                 <div className="ml-6 hidden md:block">
                     <Navigation orientation="horizontal" />
                 </div>
-                <div className="relative ml-auto hidden max-w-sm flex-1 md:block">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input type="search" placeholder="Search tools..." className="pl-9" aria-label="Search" />
-                </div>
+                <Suspense fallback={<div className="ml-auto hidden max-w-sm flex-1 md:block" />}>
+                    <HeaderSearch />
+                </Suspense>
                 <div className="ml-auto flex items-center gap-1 md:ml-0">
                     <ThemeToggle />
                     <Button variant="ghost" size="icon" className="relative size-9" aria-label="Notifications">
