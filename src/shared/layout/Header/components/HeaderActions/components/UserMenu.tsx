@@ -1,9 +1,7 @@
-import { LogOut, Settings, UserRound } from 'lucide-react';
-import Link from 'next/link';
+import { LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Button } from '@/shared/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu';
-import { path } from '@/shared/router';
 
 const DEMO_USER = {
     name: 'Admin User',
@@ -28,15 +26,6 @@ export const UserMenu = () => {
                         </div>
                     </DropdownMenuLabel>
                 </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem render={<Link href={path('settings')} />}>
-                    <UserRound className="size-4" />
-                    Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem render={<Link href={path('settings')} />}>
-                    <Settings className="size-4" />
-                    Settings
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem disabled>
                     <LogOut className="size-4" />

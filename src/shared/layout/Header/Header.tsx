@@ -8,7 +8,7 @@ import { Navigation } from '@/shared/layout/Header/components/Navigation';
 export const Header = () => {
     return (
         <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
-            <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-4 md:px-6">
+            <div className="mx-auto flex h-16 max-w-app items-center gap-4 px-4 md:px-6">
                 <MobileMenu />
                 <BrandMark />
                 <Navigation orientation="horizontal" className="ml-6 hidden md:flex" />

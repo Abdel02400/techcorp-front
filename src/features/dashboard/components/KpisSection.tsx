@@ -16,7 +16,7 @@ export const KpisSection = () => {
     const activeToolsCount = tools.filter((tool) => tool.status === 'active').length;
 
     return (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard
                 title="Monthly Budget"
                 value={formatCurrency(analytics.budget_overview.current_month_total)}

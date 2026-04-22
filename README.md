@@ -67,7 +67,6 @@ Le fichier `.env.local` (git-ignoré) est requis au lancement. Le fichier `.env.
 - **`/` — Dashboard** : vue macro. 4 KPI cards (budget, active tools, departments, cost/user) + table des 8 outils récemment modifiés.
 - **`/tools` — Tools Catalogue** : vue opérationnelle. Catalogue filtrable (recherche + 4 dropdowns + cost range, tout URL-backed), CRUD per-row (Add / Edit / Toggle status / Delete) via dialogs et mutations TanStack Query.
 - **`/analytics` — Analytics** : vue stratégique. Budget health + breakdown par département (donut) + distribution de statut (pie) + top 10 des tools par coût (horizontal bar).
-- `/settings` est un stub "Coming soon" pour cette itération.
 
 ### Structure du projet
 
@@ -80,7 +79,6 @@ src/
 │   ├── page.tsx                  # Dashboard (/)
 │   ├── tools/page.tsx            # Tools catalogue (/tools)
 │   ├── analytics/page.tsx        # Analytics (/analytics)
-│   ├── settings/page.tsx         # Settings (/settings — stub)
 │   ├── error.tsx                 # Error boundary global
 │   ├── not-found.tsx             # 404 branded
 │   ├── icon.tsx                  # Favicon dynamique via next/og
@@ -127,8 +125,7 @@ src/
 │   │   └── requestManager.ts     # classe abstraite
 │   ├── components/
 │   │   ├── ui/                   # shadcn primitives (Button, Input, Card, Dialog, Table, Chart, ...)
-│   │   ├── typography.tsx        # Heading + Text avec variants cva (single source of truth typo)
-│   │   └── ComingSoon.tsx        # placeholder générique
+│   │   └── typography.tsx        # Heading + Text avec variants cva (single source of truth typo)
 │   ├── hooks/
 │   │   └── useMounted.ts         # guard d'hydratation (useSyncExternalStore)
 │   ├── layout/                   # Shell app — un dossier par section, prêt pour Footer
@@ -144,8 +141,7 @@ src/
 │   │               └── components/
 │   │                   ├── ThemeToggle.tsx       # dropdown Light/Dark/System
 │   │                   ├── UserMenu.tsx          # avatar + dropdown
-│   │                   ├── NotificationsButton.tsx
-│   │                   └── SettingsButton.tsx
+│   │                   └── NotificationsButton.tsx
 │   ├── lib/
 │   │   ├── format.ts             # formatCurrency / formatCurrencyCompact / formatRelativeTime + constantes locales (MS_PER_DAY, DAYS_PER_MONTH, ...)
 │   │   ├── queryClient.ts        # factories serveur/client + QUERY_STALE_TIME_MS + getServerQueryClient
@@ -223,7 +219,7 @@ Le parcours utilisateur cible est l'**admin IT** qui arrive sur le Dashboard dep
 
 **Pattern de navigation cohérent cross-page** :
 
-- **`Header` partagé** ([src/shared/layout/Header.tsx](src/shared/layout/Header.tsx)) avec sticky top, backdrop blur, et actif déterminé par `usePathname` → état visuel `bg-accent` sur l'item courant.
+- **`Header` partagé** ([src/shared/layout/Header/Header.tsx](src/shared/layout/Header/Header.tsx)) avec sticky top, backdrop blur, et actif déterminé par `usePathname` → état visuel `bg-accent` sur l'item courant.
 - **Search bar dans le header** qui s'adapte au contexte — active sur `/tools` (filtre le catalogue via `?search=`), disabled ailleurs (placeholder générique, pas de fonctionnalité fantôme).
 - **Mobile menu** (drawer Sheet) sous `md:` — mêmes nav items, fermeture automatique au click.
 - **Theme toggle** (Light / Dark / System) via `next-themes`, persisté dans localStorage et synchronisé avec la préférence OS.
@@ -248,7 +244,6 @@ export const routes = {
     home: { path: '/', nav: { label: 'Dashboard' } },
     tools: { path: '/tools', nav: { label: 'Tools' } },
     analytics: { path: '/analytics', nav: { label: 'Analytics' } },
-    settings: { path: '/settings', nav: { label: 'Settings' } },
 } satisfies RoutesMap;
 ```
 
@@ -309,7 +304,7 @@ Les 4 principes qui ont tenu la cohérence sans maquette pour les jours 7 et 8 :
 
 1. **La maquette J6 définit la langue, pas juste l'écran.** Grille, rythme vertical, padding interne des cards, épaisseur des gradients, radius des pills — tout est extrait et réutilisé. Chaque composant J7-J8 reprend ces valeurs, aucune valeur arbitraire.
 2. **Chaque nouvelle décision doit citer un précédent.** Bouton destructive sur `DeleteToolDialog` → on reprend `variant="destructive"` shadcn. Skeleton pour la Tools table → on mime la même structure que `RecentToolsSkeleton` (headers inclus pour éviter le layout shift). Badge de status → on étend `StatusBadge` existant, on n'en crée pas un nouveau.
-3. **Les composants "common" sont les vrais vecteurs de cohérence.** `ComingSoon` dans `shared/components/`, `StatusBadge` et `ToolIcon` dans `features/tools/components/` (réutilisés par Dashboard et Analytics), et plus récemment `<Heading>` / `<Text>` dans `shared/components/typography.tsx` pour factoriser les combinaisons de classes typographiques. Extraire tôt ce qui sera réutilisé, pas tard.
+3. **Les composants "common" sont les vrais vecteurs de cohérence.** `StatusBadge` et `ToolIcon` dans `features/tools/components/` (réutilisés par Dashboard et Analytics), et `<Heading>` / `<Text>` dans `shared/components/typography.tsx` pour factoriser les combinaisons de classes typographiques. Extraire tôt ce qui sera réutilisé, pas tard.
 4. **Quand l'API ne matche pas le mockup, on adapte la donnée, pas le design.** Le parser tolérant dans `toolListSchema` drop silencieusement les entrées mal formées plutôt que d'afficher une table criblée de "—". La stratégie d'over-fetch dans `getRecent` (`limit * 4` puis slice) compense la junk data du serveur sans afficher moins de rows que prévu. Le design reste propre, la résilience est en amont.
 
 ---
@@ -379,17 +374,22 @@ Approche **mobile-first stricte** : chaque composant est designed en mobile par 
 
 ### Breakpoints
 
-| Prefix | Min width | Usage principal                                     |
-| ------ | --------- | --------------------------------------------------- |
-| _base_ | 0px       | Stack vertical, cards 1-col, mobile menu drawer     |
-| `sm:`  | 640px     | Tablette portrait, grilles 2-col                    |
-| `md:`  | 768px     | Tablette landscape, Header nav horizontale + search |
-| `lg:`  | 1024px    | Desktop, grilles 3-col                              |
-| `xl:`  | 1280px    | Large desktop, grilles 4-col (KPIs)                 |
+Breakpoints Tailwind natifs alignés avec le brief (Mobile <640, Tablet 640-1024, Desktop >1024).
+
+| Prefix | Min width | Usage principal                                          |
+| ------ | --------- | -------------------------------------------------------- |
+| _base_ | 0px       | Mobile — stack vertical, cards 1-col, mobile menu drawer |
+| `sm:`  | 640px     | Tablet — grilles 2-col                                   |
+| `md:`  | 768px     | Header nav horizontale + search                          |
+| `lg:`  | 1024px    | Desktop — grilles 4-col (KPIs)                           |
+
+### Max-width container
+
+Un token `--container-app: 1400px` défini dans `@theme inline` de `globals.css` génère l'utility `max-w-app`. Utilisé sur le `<header>` et les 3 `<main>` — un seul endroit à changer pour ajuster la largeur maximale de l'app, pas de magic number `max-w-[1400px]` disséminé.
 
 ### Patterns par page
 
-- **Dashboard** : 4 KPI cards en `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4`. Table Recent Tools : scroll horizontal natif via `overflow-x-auto` (inclus dans le wrapper du `Table` shadcn) sur petits écrans, full width desktop.
+- **Dashboard** : 4 KPI cards en `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`. Table Recent Tools : scroll horizontal natif via `overflow-x-auto` (inclus dans le wrapper du `Table` shadcn) sur petits écrans, full width desktop.
 - **Tools** : toolbar filters en `flex flex-wrap gap-2` → les dropdowns wrap naturellement en 2 lignes sur petits écrans. Table : même stratégie scroll horizontal. Page header en `flex-col` (stacked) sur mobile, `sm:flex-row` avec le bouton "Add Tool" aligné à droite dès sm:.
 - **Analytics** : Budget card full width. Les 2 pies en `grid gap-6 md:grid-cols-2` — stackées mobile, side-by-side dès tablet. Bar chart `h-80 w-full` toujours full width, les labels de tools sont tronqués via `YAxis width={110}`.
 - **Header** : `<MobileMenu>` drawer (Sheet) sous `md:`, `<Navigation>` horizontale inline `md:` et plus. `<HeaderSearch>` disparaît sous `md:` (accessible via le drawer in future iteration).
@@ -512,7 +512,6 @@ GitHub Actions qui bloque les PR sur : `pnpm lint` + `pnpm format:check` + `pnpm
 - **View details dédié** (Sheet read-only) pour voir un tool sans ouvrir le form d'édition
 - **Error boundaries** autour des Suspense (fallback propre si l'API fail complètement, pas juste skeleton infini)
 - **Time range picker** sur Analytics si le JSON server expose un jour `/analytics?from=...&to=...`
-- **Page `/settings` réelle** (préférences UI, override d'endpoint API pour démo, debug toggles)
 - **Tests unitaires** sur les helpers pures et les primitives réutilisées
 
 ### Moyen terme (produit)
@@ -551,7 +550,7 @@ Les données proviennent d'un JSON server mis à disposition dans le cadre du te
 - [x] **Jour 0 — Foundation (providers)** : `AppProviders` (next-themes + TanStack Query + Devtools + Toaster), layout root avec `suppressHydrationWarning`, configuration `NEXT_PUBLIC_API_URL`, police Inter, constante `BRAND`
 - [x] **Jour 0 — Foundation (API layer)** : `RequestManager`, 5 DTOs, 5 services, validators Zod génériques + enums de domaine, factory `getServerQueryClient` per-request
 - [x] **Jour 0 — Foundation (query options)** : 5 namespaces de query options partagées serveur/client, adaptateur `unwrapResponse`
-- [x] **Jour 6 — Shell applicatif** : `Header`, `Navigation`, `ThemeToggle`, `UserMenu`, `MobileMenu`, `BrandMark` ; pages stub `ComingSoon` pour les routes pas encore implémentées
+- [x] **Jour 6 — Shell applicatif** : `Header`, `Navigation`, `ThemeToggle`, `UserMenu`, `MobileMenu`, `BrandMark`
 - [x] **Jour 6 — Dashboard KPIs** : 4 KPI cards alimentés par 3 queries parallèles, prefetch + Suspense + skeleton
 - [x] **Jour 6 — Recent Tools** : table 5 colonnes, `StatusBadge`, `ToolIcon`, stratégie d'over-fetch pour compenser la junk data
 - [x] **Jour 7 — Tools catalog (display)** : page `/tools`, table 8 colonnes, recherche URL-backed, `HeaderSearch` debouncé
