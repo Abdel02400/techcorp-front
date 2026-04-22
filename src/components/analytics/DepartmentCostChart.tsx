@@ -1,7 +1,8 @@
 'use client';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo } from 'react';
 import { Cell, Pie, PieChart } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
@@ -18,6 +19,15 @@ interface SliceData {
 
 export const DepartmentCostChart = () => {
     const { data: tools } = useSuspenseQuery(toolsQueries.all());
+    const router = useRouter();
+
+    const handleSliceClick = useCallback(
+        (department: string) => {
+            if (department === 'Unknown') return;
+            router.push(`/tools?department=${encodeURIComponent(department)}`);
+        },
+        [router],
+    );
 
     const chartData = useMemo<SliceData[]>(() => {
         const byDepartment = new Map<string, number>();
@@ -45,7 +55,16 @@ export const DepartmentCostChart = () => {
                 <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-64">
                     <PieChart>
                         <ChartTooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
-                        <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={95} strokeWidth={2}>
+                        <Pie
+                            data={chartData}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={60}
+                            outerRadius={95}
+                            strokeWidth={2}
+                            onClick={(slice) => handleSliceClick((slice as unknown as SliceData).name)}
+                            className="cursor-pointer outline-none focus:outline-none"
+                        >
                             {chartData.map((slice) => (
                                 <Cell key={slice.name} fill={slice.fill} />
                             ))}
@@ -54,10 +73,17 @@ export const DepartmentCostChart = () => {
                 </ChartContainer>
                 <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
                     {chartData.map((slice) => (
-                        <li key={slice.name} className="flex items-center gap-2">
-                            <span className="size-2.5 shrink-0 rounded-full" style={{ background: slice.fill }} />
-                            <span className="truncate">{slice.name}</span>
-                            <span className="ml-auto shrink-0 font-medium tabular-nums">{formatCurrency(slice.value)}</span>
+                        <li key={slice.name}>
+                            <button
+                                type="button"
+                                onClick={() => handleSliceClick(slice.name)}
+                                className="flex w-full items-center gap-2 rounded-sm px-1 py-0.5 text-left transition-colors hover:bg-muted disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent"
+                                disabled={slice.name === 'Unknown'}
+                            >
+                                <span className="size-2.5 shrink-0 rounded-full" style={{ background: slice.fill }} />
+                                <span className="truncate">{slice.name}</span>
+                                <span className="ml-auto shrink-0 font-medium tabular-nums">{formatCurrency(slice.value)}</span>
+                            </button>
                         </li>
                     ))}
                 </ul>

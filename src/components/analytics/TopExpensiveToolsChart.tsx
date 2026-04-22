@@ -1,7 +1,8 @@
 'use client';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
@@ -16,6 +17,9 @@ const chartConfig = {
 
 export const TopExpensiveToolsChart = () => {
     const { data: tools } = useSuspenseQuery(toolsQueries.all());
+    const router = useRouter();
+
+    const handleBarClick = useCallback((name: string) => router.push(`/tools?search=${encodeURIComponent(name)}`), [router]);
 
     const chartData = useMemo(() => {
         return [...tools]
@@ -28,7 +32,7 @@ export const TopExpensiveToolsChart = () => {
         <Card>
             <CardHeader>
                 <CardTitle>Top {TOP_COUNT} Expensive Tools</CardTitle>
-                <CardDescription>Highest monthly spend, all statuses included</CardDescription>
+                <CardDescription>Highest monthly spend, all statuses included — click a bar to open the tool in the catalogue</CardDescription>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig} className="aspect-auto h-80 w-full">
@@ -37,7 +41,7 @@ export const TopExpensiveToolsChart = () => {
                         <XAxis type="number" tickFormatter={(value) => formatCurrencyCompact(Number(value))} />
                         <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={110} tickMargin={8} />
                         <ChartTooltip cursor={{ fill: 'var(--muted)' }} content={<ChartTooltipContent formatter={(value) => formatCurrency(Number(value))} />} />
-                        <Bar dataKey="monthly_cost" fill="var(--color-monthly_cost)" radius={[0, 6, 6, 0]} />
+                        <Bar dataKey="monthly_cost" fill="var(--color-monthly_cost)" radius={[0, 6, 6, 0]} className="cursor-pointer" onClick={(payload) => handleBarClick((payload as unknown as (typeof chartData)[number]).name)} />
                     </BarChart>
                 </ChartContainer>
             </CardContent>

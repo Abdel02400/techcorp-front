@@ -79,6 +79,8 @@ src/
 │   ├── tools/page.tsx       # Tools catalogue (/tools)
 │   ├── analytics/page.tsx   # Analytics (/analytics)
 │   ├── settings/page.tsx    # Settings (/settings — stub)
+│   ├── error.tsx            # Error boundary global (Try again + Back to dashboard)
+│   ├── not-found.tsx        # 404 branded custom
 │   ├── icon.tsx             # Favicon dynamique via next/og ImageResponse
 │   └── globals.css          # Tailwind v4 @theme inline + tokens shadcn
 ├── api/                     # Couche d'accès API
@@ -181,7 +183,13 @@ Le parcours utilisateur cible est l'**admin IT** qui arrive sur le Dashboard dep
 - **Theme toggle** (Light / Dark / System) via `next-themes`, persisté dans localStorage et synchronisé avec la préférence OS.
 - **Favicon dynamique** ([src/app/icon.tsx](src/app/icon.tsx)) généré via `next/og` — même Zap + gradient violet→indigo que le `<BrandMark>` du header, zéro binaire à maintenir.
 
-**Next step :** rendre les slices des charts Analytics cliquables pour naviguer vers `/tools` avec le filtre correspondant (prévu dans le commit polish suivant — voir "Next Steps").
+**Navigation cross-page depuis Analytics** : les éléments des 3 charts sont cliquables et ouvrent directement la vue filtrée correspondante dans Tools :
+
+- Slice du `DepartmentCostChart` → `/tools?department=<name>`
+- Slice du `StatusDistributionChart` → `/tools?status=<status>`
+- Bar du `TopExpensiveToolsChart` → `/tools?search=<tool_name>`
+
+Cursor `pointer` et hover feedback sur chaque élément cliquable. Les segments "Unknown" (tools sans department défini) sont désactivés pour éviter des liens vides.
 
 ---
 
@@ -459,4 +467,5 @@ Les données proviennent d'un JSON server mis à disposition dans le cadre du te
 - [x] **Jour 7 — Tools management (CRUD per-row)** : Add / Edit / Delete / Toggle status via `ToolForm` (react-hook-form + standardSchemaResolver), mutations TanStack Query avec invalidation `['tools']` et toasts Sonner
 - [ ] **Jour 7 — Tools bulk ops** (optionnel) : multi-select + bulk actions
 - [x] **Jour 8 — Analytics (core)** : 4 sections (`BudgetOverviewCard`, `DepartmentCostChart`, `StatusDistributionChart`, `TopExpensiveToolsChart`), shadcn Chart + Recharts, palette `--chart-1..5` passée du grayscale au coloré OKLCH
-- [ ] **Jour 8 — Analytics (optionnel)** : usage analytics + insights + cross-page nav (click chart → `/tools?filter`)
+- [x] **Jour 8 — Polish (cross-page nav + error handling)** : slices des 3 charts Analytics cliquables (Department → `/tools?department=`, Status → `/tools?status=`, Top Expensive → `/tools?search=`), `error.tsx` global (Try again / Back to dashboard), `not-found.tsx` 404 branded
+- [ ] **Jour 8 — Analytics (optionnel)** : usage analytics (adoption rates, most/least used, growth trends) + insights (unused tool alerts, ROI projections)
