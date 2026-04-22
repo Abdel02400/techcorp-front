@@ -4,10 +4,11 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/shared/components/ui/chart';
 import { formatCurrency, formatCurrencyCompact } from '@/shared/lib/format';
-import { toolsQueries } from '@/features/tools/queries/toolsQueries';
+import { path } from '@/shared/router';
 
 const TOP_COUNT = 10;
 
@@ -19,7 +20,7 @@ export const TopExpensiveToolsChart = () => {
     const { data: tools } = useSuspenseQuery(toolsQueries.all());
     const router = useRouter();
 
-    const handleBarClick = useCallback((name: string) => router.push(`/tools?search=${encodeURIComponent(name)}`), [router]);
+    const handleBarClick = useCallback((name: string) => router.push(path('tools', { search: name })), [router]);
 
     const chartData = useMemo(() => {
         return [...tools]

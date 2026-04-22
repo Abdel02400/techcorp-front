@@ -1,6 +1,7 @@
 import { Home, SearchX } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/shared/components/ui/button';
+import { path } from '@/shared/router';
 
 const NotFoundPage = () => {
     return (
@@ -12,7 +13,7 @@ const NotFoundPage = () => {
                 <h1 className="text-3xl font-semibold tracking-tight">Page not found</h1>
                 <p className="text-muted-foreground">This route doesn&apos;t exist in the TechCorp dashboard, or it has been moved.</p>
             </div>
-            <Button variant="default" nativeButton={false} render={<Link href="/" />}>
+            <Button variant="default" nativeButton={false} render={<Link href={path('home')} />}>
                 <Home className="size-4" />
                 Back to dashboard
             </Button>

@@ -4,10 +4,11 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import { Cell, Pie, PieChart } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/shared/components/ui/chart';
 import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 import type { ToolStatus } from '@/features/tools/schemas/enums';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/shared/components/ui/chart';
+import { path } from '@/shared/router';
 
 const STATUS_CONFIG: Record<ToolStatus, { label: string; fill: string }> = {
     active: { label: 'Active', fill: 'oklch(0.72 0.19 150)' },
@@ -21,7 +22,7 @@ export const StatusDistributionChart = () => {
     const { data: tools } = useSuspenseQuery(toolsQueries.all());
     const router = useRouter();
 
-    const handleSliceClick = useCallback((status: ToolStatus) => router.push(`/tools?status=${status}`), [router]);
+    const handleSliceClick = useCallback((status: ToolStatus) => router.push(path('tools', { status })), [router]);
 
     const chartData = useMemo(() => {
         const counts: Record<ToolStatus, number> = { active: 0, expiring: 0, unused: 0 };

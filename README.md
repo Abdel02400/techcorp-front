@@ -130,15 +130,20 @@ src/
 │   │   └── ComingSoon.tsx        # placeholder générique
 │   ├── hooks/
 │   │   └── useMounted.ts         # guard d'hydratation (useSyncExternalStore)
-│   ├── layout/                   # Shell app : Header, HeaderSearch, Navigation, ThemeToggle, UserMenu, MobileMenu, BrandMark, navItems
+│   ├── layout/                   # Shell app : Header, HeaderSearch, Navigation, ThemeToggle, UserMenu, MobileMenu, BrandMark
 │   ├── lib/
-│   │   ├── format.ts             # formatCurrency / formatCurrencyCompact / formatRelativeTime
+│   │   ├── format.ts             # formatCurrency / formatCurrencyCompact / formatRelativeTime + constantes locales (MS_PER_DAY, DAYS_PER_MONTH, ...)
 │   │   ├── queryClient.ts        # factories serveur/client + QUERY_STALE_TIME_MS + getServerQueryClient
 │   │   └── utils.ts              # cn() helper
 │   ├── providers/
 │   │   └── AppProviders.tsx      # ThemeProvider + QueryClientProvider + Toaster + Devtools
 │   ├── queries/
-│   │   └── unwrapResponse.ts     # adapter Response<T> → T | throw
+│   │   └── unwrapResponse.ts     # adapters : unwrapResponse (sync) + unwrap (promise chaining pour queryFn)
+│   ├── router/                   # Router typé + registry de routes
+│   │   ├── types.ts              # RouteConfig, RoutesMap, NavMeta, ExtractParams (template literal)
+│   │   ├── routes.ts             # Map des routes de l'app avec nav metadata
+│   │   ├── createRouter.ts       # Factory : path(name, options?) validé + query params
+│   │   └── index.ts              # Exporte `path()` + `navEntries` dérivé du map
 │   └── schemas/
 │       └── commonSchemas.ts      # primitives Zod génériques (idSchema, urlSchema, emailSchema, isoDateTimeSchema, ...)
 │
@@ -146,6 +151,7 @@ src/
     ├── brand.ts                  # BRAND { name, productName, tagline }
     ├── env.ts                    # isDev / isProd / isTest (tree-shaken au build)
     ├── fonts.ts                  # Inter (liée à --font-sans)
+    ├── i18n.ts                   # DEFAULT_LOCALE + DEFAULT_CURRENCY (prêt pour i18n futur)
     └── metadata.ts               # rootMetadata (titre, description)
 ```
 
@@ -215,6 +221,38 @@ Le parcours utilisateur cible est l'**admin IT** qui arrive sur le Dashboard dep
 - Bar du `TopExpensiveToolsChart` → `/tools?search=<tool_name>`
 
 Cursor `pointer` et hover feedback sur chaque élément cliquable. Les segments "Unknown" (tools sans department défini) sont désactivés pour éviter des liens vides.
+
+### Router typé (`src/shared/router/`)
+
+Toutes les URLs de l'app passent par un **helper `path()` typé**, aucune URL hardcodée dans les composants. Combine trois mécanismes :
+
+**1. Registry de routes** ([`routes.ts`](src/shared/router/routes.ts)) — single source of truth :
+
+```ts
+export const routes = {
+    home: { path: '/', nav: { label: 'Dashboard' } },
+    tools: { path: '/tools', nav: { label: 'Tools' } },
+    analytics: { path: '/analytics', nav: { label: 'Analytics' } },
+    settings: { path: '/settings', nav: { label: 'Settings' } },
+} satisfies RoutesMap;
+```
+
+Les entrées qui portent une prop `nav` apparaissent dans le `Navigation` principal (dérivé à la volée via `navEntries`, ordre = ordre de déclaration). Une route "cachée" (ex: `toolDetail`, `login`) serait déclarée sans `nav` et n'apparaîtrait pas dans le header.
+
+**2. Helper `path(name, options?)`** avec typage template literal pour les params :
+
+```ts
+path('home'); // '/'
+path('tools', { status: 'active' }); // '/tools?status=active'
+path('tools', { department: 'Engineering', min_cost: 500 }); // multi-params
+path('toolDetail', { id: 42, tab: 'history' }); // '/tools/42?tab=history' (future)
+```
+
+Le type `ExtractParams<Template>` extrait les `{param}` du template pour forcer leur présence dans les options (TS error si un param est oublié).
+
+**3. `typedRoutes: true`** dans [`next.config.ts`](next.config.ts) — Next génère au build un type `Route` qui est l'union de toutes les URLs valides dérivées du filesystem. Notre `path()` retourne `Route`, donc tout appel `router.push(path('tols'))` (typo) est bloqué au compile time. Filet de sécurité contre la dérive entre notre map déclarative et la structure des `app/**/page.tsx`.
+
+**Résultat concret** : 10 sites d'usage (liens header, pages error/404, charts analytics cliquables, filtres URL-backed) passent tous par `path()`. Renommer une route = 1 ligne à changer dans `routes.ts`, et TS propage.
 
 ---
 

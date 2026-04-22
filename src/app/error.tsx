@@ -3,8 +3,9 @@
 import { AlertTriangle, Home, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { Button } from '@/shared/components/ui/button';
 import { isDev } from '@/config/env';
+import { Button } from '@/shared/components/ui/button';
+import { path } from '@/shared/router';
 
 interface ErrorPageProps {
     error: Error & { digest?: string };
@@ -31,7 +32,7 @@ const ErrorPage = ({ error, reset }: ErrorPageProps) => {
                     <RotateCcw className="size-4" />
                     Try again
                 </Button>
-                <Button variant="ghost" nativeButton={false} render={<Link href="/" />}>
+                <Button variant="ghost" nativeButton={false} render={<Link href={path('home')} />}>
                     <Home className="size-4" />
                     Back to dashboard
                 </Button>

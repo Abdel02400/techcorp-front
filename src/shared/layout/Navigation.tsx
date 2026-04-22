@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { NAV_ITEMS } from '@/shared/layout/navItems';
 import { cn } from '@/shared/lib/utils';
+import { navEntries } from '@/shared/router';
 
 interface NavigationProps {
     orientation?: 'horizontal' | 'vertical';
@@ -20,17 +20,17 @@ export const Navigation = ({ orientation = 'horizontal', onNavigate }: Navigatio
 
     return (
         <nav className={cn('flex gap-1', orientation === 'vertical' ? 'flex-col' : 'flex-row items-center')}>
-            {NAV_ITEMS.map((item) => {
-                const active = isItemActive(item.href, pathname);
+            {navEntries.map((entry) => {
+                const active = isItemActive(entry.href, pathname);
                 return (
                     <Link
-                        key={item.href}
-                        href={item.href}
+                        key={entry.href}
+                        href={entry.href}
                         onClick={onNavigate}
                         className={cn('rounded-md px-3 py-1.5 text-sm font-medium transition-colors', active ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground', orientation === 'vertical' && 'w-full')}
                         aria-current={active ? 'page' : undefined}
                     >
-                        {item.label}
+                        {entry.label}
                     </Link>
                 );
             })}

@@ -16,11 +16,11 @@ export const AppProviders = ({ children }: AppProvidersProps) => {
     const [queryClient] = useState(() => createClientQueryClient());
 
     return (
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" disableTransitionOnChange>
             <QueryClientProvider client={queryClient}>
                 {children}
                 <Toaster position="bottom-right" richColors closeButton />
-                {isDev && <ReactQueryDevtools initialIsOpen={false} />}
+                {isDev && <ReactQueryDevtools />}
             </QueryClientProvider>
         </ThemeProvider>
     );

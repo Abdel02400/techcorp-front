@@ -2,12 +2,13 @@
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
+import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
-import { toolsQueries } from '@/features/tools/queries/toolsQueries';
+import { path } from '@/shared/router';
 
 const ALL_VALUE = '__all__';
 const FILTER_KEYS = ['department', 'status', 'category', 'min_cost', 'max_cost'] as const;
@@ -18,7 +19,6 @@ const uniqueStrings = (values: (string | undefined)[]): string[] => {
 
 export const ToolsFilters = () => {
     const { data: tools } = useSuspenseQuery(toolsQueries.all());
-    const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -36,18 +36,16 @@ export const ToolsFilters = () => {
             const params = new URLSearchParams(searchParams.toString());
             if (value && value !== ALL_VALUE) params.set(key, value);
             else params.delete(key);
-            const query = params.toString();
-            router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+            router.replace(path('tools', Object.fromEntries(params.entries())), { scroll: false });
         },
-        [pathname, router, searchParams],
+        [router, searchParams],
     );
 
     const clearFilters = useCallback(() => {
         const params = new URLSearchParams(searchParams.toString());
         FILTER_KEYS.forEach((key) => params.delete(key));
-        const query = params.toString();
-        router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    }, [pathname, router, searchParams]);
+        router.replace(path('tools', Object.fromEntries(params.entries())), { scroll: false });
+    }, [router, searchParams]);
 
     const hasActiveFilters = FILTER_KEYS.some((key) => searchParams.has(key));
 

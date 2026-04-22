@@ -1,13 +1,14 @@
 import { Bell, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { Button } from '@/shared/components/ui/button';
 import { BrandMark } from '@/shared/layout/BrandMark';
 import { HeaderSearch } from '@/shared/layout/HeaderSearch';
 import { MobileMenu } from '@/shared/layout/MobileMenu';
 import { Navigation } from '@/shared/layout/Navigation';
 import { ThemeToggle } from '@/shared/layout/ThemeToggle';
 import { UserMenu } from '@/shared/layout/UserMenu';
-import { Button } from '@/shared/components/ui/button';
+import { path } from '@/shared/router';
 
 export const Header = () => {
     return (
@@ -27,7 +28,7 @@ export const Header = () => {
                         <Bell className="size-4" />
                         <span className="absolute right-2 top-2 size-2 rounded-full bg-rose-500" aria-hidden />
                     </Button>
-                    <Button variant="ghost" size="icon" className="size-9" aria-label="Settings" nativeButton={false} render={<Link href="/settings" />}>
+                    <Button variant="ghost" size="icon" className="size-9" aria-label="Settings" nativeButton={false} render={<Link href={path('settings')} />}>
                         <Settings className="size-4" />
                     </Button>
                     <UserMenu />

@@ -4,8 +4,9 @@ import { Search } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Input } from '@/shared/components/ui/input';
+import { path } from '@/shared/router';
 
-const TOOLS_PATH = '/tools';
+const TOOLS_PATH = path('tools');
 const SEARCH_PARAM = 'search';
 const DEBOUNCE_MS = 300;
 
@@ -25,11 +26,10 @@ export const HeaderSearch = () => {
             const params = new URLSearchParams(searchParams.toString());
             if (value) params.set(SEARCH_PARAM, value);
             else params.delete(SEARCH_PARAM);
-            const query = params.toString();
-            router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+            router.replace(path('tools', Object.fromEntries(params.entries())), { scroll: false });
         }, DEBOUNCE_MS);
         return () => clearTimeout(timer);
-    }, [value, isEnabled, pathname, router, searchParams]);
+    }, [value, isEnabled, router, searchParams]);
 
     return (
         <div className="relative ml-auto hidden max-w-sm flex-1 md:block">

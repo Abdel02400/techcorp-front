@@ -4,10 +4,11 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import { Cell, Pie, PieChart } from 'recharts';
+import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/shared/components/ui/chart';
 import { formatCurrency } from '@/shared/lib/format';
-import { toolsQueries } from '@/features/tools/queries/toolsQueries';
+import { path } from '@/shared/router';
 
 const PALETTE = ['var(--color-chart-1)', 'var(--color-chart-2)', 'var(--color-chart-3)', 'var(--color-chart-4)', 'var(--color-chart-5)'];
 
@@ -24,7 +25,7 @@ export const DepartmentCostChart = () => {
     const handleSliceClick = useCallback(
         (department: string) => {
             if (department === 'Unknown') return;
-            router.push(`/tools?department=${encodeURIComponent(department)}`);
+            router.push(path('tools', { department }));
         },
         [router],
     );
