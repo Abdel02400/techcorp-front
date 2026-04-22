@@ -140,7 +140,7 @@ src/
 │   ├── queries/
 │   │   └── unwrapResponse.ts     # adapters : unwrapResponse (sync) + unwrap (promise chaining pour queryFn)
 │   ├── router/                   # Router typé + registry de routes
-│   │   ├── types.ts              # RouteConfig, RoutesMap, NavMeta, ExtractParams (template literal)
+│   │   ├── types.ts              # RouteConfig (discriminated union static/dynamic), NavMeta, ExtractParams
 │   │   ├── routes.ts             # Map des routes de l'app avec nav metadata
 │   │   ├── createRouter.ts       # Factory : path(name, options?) validé + query params
 │   │   └── index.ts              # Exporte `path()` + `navEntries` dérivé du map
@@ -251,6 +251,11 @@ path('toolDetail', { id: 42, tab: 'history' }); // '/tools/42?tab=history' (futu
 Le type `ExtractParams<Template>` extrait les `{param}` du template pour forcer leur présence dans les options (TS error si un param est oublié).
 
 **3. `typedRoutes: true`** dans [`next.config.ts`](next.config.ts) — Next génère au build un type `Route` qui est l'union de toutes les URLs valides dérivées du filesystem. Notre `path()` retourne `Route`, donc tout appel `router.push(path('tols'))` (typo) est bloqué au compile time. Filet de sécurité contre la dérive entre notre map déclarative et la structure des `app/**/page.tsx`.
+
+**4. Union discriminée au niveau du type `RouteConfig`** — une route est soit statique (`{ path: Route; nav?: NavMeta }`) soit dynamique (`{ path: TemplateWithParam; nav?: never }`). Deux conséquences :
+
+- Un typo dans un path statique (`'/hme'` au lieu de `'/home'`) est **bloqué à la déclaration** dans `routes.ts`, pas seulement à l'appel de `path()`
+- Déclarer `nav` sur une route dynamique (ex : `toolDetail: { path: '/tools/{id}', nav: {...} }`) est un **TS error** — une route dynamique n'a pas vocation à apparaître dans le header principal sans id concret. La règle métier est encodée dans le type au lieu de vivre dans un commentaire
 
 **Résultat concret** : 10 sites d'usage (liens header, pages error/404, charts analytics cliquables, filtres URL-backed) passent tous par `path()`. Renommer une route = 1 ligne à changer dans `routes.ts`, et TS propage.
 

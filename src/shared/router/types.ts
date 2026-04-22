@@ -6,10 +6,13 @@ export interface NavMeta {
     label: string;
 }
 
-export interface RouteConfig {
-    path: string;
-    nav?: NavMeta;
-}
+// A static route that Next resolves directly; can appear in the header navigation
+type StaticRouteConfig = { path: Route; nav?: NavMeta };
+
+// A dynamic route with `{param}` placeholders; cannot appear in the header nav (would need concrete param values)
+type DynamicRouteConfig = { path: `${string}{${string}}${string}`; nav?: never };
+
+export type RouteConfig = StaticRouteConfig | DynamicRouteConfig;
 
 export type RoutesMap = Record<string, RouteConfig>;
 

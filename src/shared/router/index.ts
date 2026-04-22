@@ -9,6 +9,6 @@ export interface NavEntry {
     href: Route;
 }
 
-export const navEntries: NavEntry[] = Object.values(routes).flatMap((config) => (config.nav ? [{ label: config.nav.label, href: config.path as Route }] : []));
+export const navEntries: NavEntry[] = Object.values(routes).flatMap((config) => (config.nav ? [{ label: config.nav.label, href: config.path }] : []));
 
 export type { NavMeta, PathOptions, RouteConfig, RoutesMap } from './types';
