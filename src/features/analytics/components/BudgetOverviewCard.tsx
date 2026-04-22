@@ -1,10 +1,11 @@
 'use client';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { analyticsQueries } from '@/features/analytics/queries/analyticsQueries';
+import { Heading } from '@/shared/components/typography';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { formatCurrency, formatCurrencyCompact } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/utils';
-import { analyticsQueries } from '@/features/analytics/queries/analyticsQueries';
 
 export const BudgetOverviewCard = () => {
     const { data: analytics } = useSuspenseQuery(analyticsQueries.get());
@@ -25,7 +26,9 @@ export const BudgetOverviewCard = () => {
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
                 <div className="flex items-baseline gap-3">
-                    <span className="text-4xl font-semibold tracking-tight">{formatCurrency(current_month_total)}</span>
+                    <Heading level="kpi" as="span" className="text-4xl">
+                        {formatCurrency(current_month_total)}
+                    </Heading>
                     <span className="text-lg text-muted-foreground">/ {formatCurrencyCompact(monthly_limit)}</span>
                 </div>
                 <div className="flex flex-col gap-2">

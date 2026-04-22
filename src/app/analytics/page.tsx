@@ -5,9 +5,10 @@ import { BudgetOverviewCard } from '@/features/analytics/components/BudgetOvervi
 import { DepartmentCostChart } from '@/features/analytics/components/DepartmentCostChart';
 import { StatusDistributionChart } from '@/features/analytics/components/StatusDistributionChart';
 import { TopExpensiveToolsChart } from '@/features/analytics/components/TopExpensiveToolsChart';
-import { getServerQueryClient } from '@/shared/lib/queryClient';
 import { analyticsQueries } from '@/features/analytics/queries/analyticsQueries';
 import { toolsQueries } from '@/features/tools/queries/toolsQueries';
+import { Heading, Text } from '@/shared/components/typography';
+import { getServerQueryClient } from '@/shared/lib/queryClient';
 
 const AnalyticsPage = () => {
     const queryClient = getServerQueryClient();
@@ -17,8 +18,10 @@ const AnalyticsPage = () => {
     return (
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 md:px-6">
             <div className="mb-8 flex flex-col gap-2">
-                <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Analytics</h1>
-                <p className="text-muted-foreground">Cost breakdown and usage insights across the tools catalogue.</p>
+                <Heading level="page" as="h1">
+                    Analytics
+                </Heading>
+                <Text variant="muted">Cost breakdown and usage insights across the tools catalogue.</Text>
             </div>
             <HydrationBoundary state={dehydrate(queryClient)}>
                 <Suspense fallback={<AnalyticsSkeleton />}>

@@ -127,6 +127,7 @@ src/
 │   │   └── requestManager.ts     # classe abstraite
 │   ├── components/
 │   │   ├── ui/                   # shadcn primitives (Button, Input, Card, Dialog, Table, Chart, ...)
+│   │   ├── typography.tsx        # Heading + Text avec variants cva (single source of truth typo)
 │   │   └── ComingSoon.tsx        # placeholder générique
 │   ├── hooks/
 │   │   └── useMounted.ts         # guard d'hydratation (useSyncExternalStore)
@@ -277,6 +278,15 @@ Chaque composant custom (`StatusBadge`, `KpiCard`, `ToolIcon`, `HeaderSearch`, `
 
 Pour les charts, les tokens `--chart-1` à `--chart-5` de `globals.css` (initialement grayscale dans le preset shadcn) ont été remplacés par la même palette que les KPI cards (OKLCH : emerald / violet / orange / rose / amber), avec deux jeux de valeurs (light / dark) pour la lisibilité. Aucune couleur hardcodée dans les composants analytics — tout passe par les tokens CSS, donc un changement de palette = une modification dans `globals.css` et toutes les charts (+ toutes les autres vues qui consomment ces tokens) se mettent à jour.
 
+### Post-J8 — Typography system
+
+Refacto typographique pour éliminer la répétition de combinaisons de classes Tailwind (`text-3xl font-semibold tracking-tight md:text-4xl` dans 3 titres de page, `text-sm font-medium text-muted-foreground` pour plusieurs labels, etc.). Deux composants [`src/shared/components/typography.tsx`](src/shared/components/typography.tsx) exposent des variants cva :
+
+- **`<Heading level="...">`** — 4 variants : `page` (h1 titres de page), `section` (h2 titres de section), `kpi` (valeurs KPI), `brand` (nom de brand dans le Header). Prop `as` pour séparer la sémantique HTML du style (ex : `<Heading level="section" as="h2">`, `<Heading level="brand" as="span">`).
+- **`<Text variant="...">`** — 3 variants : `muted` (sous-titres, descriptions), `label` (petits labels de cards), `caption` (micro-texte). Prop `as` idem.
+
+Pattern cva choisi plutôt que `@apply` dans `globals.css` parce que c'est la méthode Tailwind-native officiellement recommandée (Adam Wathan), cohérente avec l'existant (Button, KpiCard utilisent déjà cva), et donne le type-checking + autocomplete IDE au call-site. Zéro string Tailwind pour la typographie dans les 12 call sites migrés — un changement de taille de tous les titres de page = 1 ligne dans le cva config.
+
 ---
 
 ## 🎯 Design Consistency Approach (sans mockups J7-J8)
@@ -285,7 +295,7 @@ Les 4 principes qui ont tenu la cohérence sans maquette pour les jours 7 et 8 :
 
 1. **La maquette J6 définit la langue, pas juste l'écran.** Grille, rythme vertical, padding interne des cards, épaisseur des gradients, radius des pills — tout est extrait et réutilisé. Chaque composant J7-J8 reprend ces valeurs, aucune valeur arbitraire.
 2. **Chaque nouvelle décision doit citer un précédent.** Bouton destructive sur `DeleteToolDialog` → on reprend `variant="destructive"` shadcn. Skeleton pour la Tools table → on mime la même structure que `RecentToolsSkeleton` (headers inclus pour éviter le layout shift). Badge de status → on étend `StatusBadge` existant, on n'en crée pas un nouveau.
-3. **Les composants "common" sont les vrais vecteurs de cohérence.** `StatusBadge`, `ToolIcon`, `ComingSoon` vivent dans `components/common/` et sont réutilisés par Dashboard, Tools et Analytics. Extraire tôt ce qui sera réutilisé, pas tard.
+3. **Les composants "common" sont les vrais vecteurs de cohérence.** `ComingSoon` dans `shared/components/`, `StatusBadge` et `ToolIcon` dans `features/tools/components/` (réutilisés par Dashboard et Analytics), et plus récemment `<Heading>` / `<Text>` dans `shared/components/typography.tsx` pour factoriser les combinaisons de classes typographiques. Extraire tôt ce qui sera réutilisé, pas tard.
 4. **Quand l'API ne matche pas le mockup, on adapte la donnée, pas le design.** Le parser tolérant dans `toolListSchema` drop silencieusement les entrées mal formées plutôt que d'afficher une table criblée de "—". La stratégie d'over-fetch dans `getRecent` (`limit * 4` puis slice) compense la junk data du serveur sans afficher moins de rows que prévu. Le design reste propre, la résilience est en amont.
 
 ---

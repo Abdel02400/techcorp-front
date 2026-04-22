@@ -5,9 +5,10 @@ import { ToolsFilters } from '@/features/tools/components/ToolsFilters';
 import { ToolsFiltersSkeleton } from '@/features/tools/components/ToolsFiltersSkeleton';
 import { ToolsSkeleton } from '@/features/tools/components/ToolsSkeleton';
 import { ToolsTable } from '@/features/tools/components/ToolsTable';
+import { toolsQueries } from '@/features/tools/queries/toolsQueries';
+import { Heading, Text } from '@/shared/components/typography';
 import { Card } from '@/shared/components/ui/card';
 import { getServerQueryClient } from '@/shared/lib/queryClient';
-import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 
 const ToolsPage = () => {
     const queryClient = getServerQueryClient();
@@ -17,8 +18,10 @@ const ToolsPage = () => {
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 md:px-6">
             <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Tools Catalogue</h1>
-                    <p className="text-muted-foreground">Browse, filter and manage every SaaS tool used across the organization.</p>
+                    <Heading level="page" as="h1">
+                        Tools Catalogue
+                    </Heading>
+                    <Text variant="muted">Browse, filter and manage every SaaS tool used across the organization.</Text>
                 </div>
                 <AddToolButton />
             </div>

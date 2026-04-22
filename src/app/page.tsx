@@ -1,13 +1,14 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { Suspense } from 'react';
+import { BRAND } from '@/config/brand';
+import { analyticsQueries } from '@/features/analytics/queries/analyticsQueries';
+import { departmentsQueries } from '@/features/departments/queries/departmentsQueries';
 import { KpisSection } from '@/features/dashboard/components/KpisSection';
 import { KpisSkeleton } from '@/features/dashboard/components/KpisSkeleton';
 import { RecentToolsSection } from '@/features/dashboard/components/RecentToolsSection';
-import { BRAND } from '@/config/brand';
-import { getServerQueryClient } from '@/shared/lib/queryClient';
-import { analyticsQueries } from '@/features/analytics/queries/analyticsQueries';
-import { departmentsQueries } from '@/features/departments/queries/departmentsQueries';
 import { toolsQueries } from '@/features/tools/queries/toolsQueries';
+import { Heading, Text } from '@/shared/components/typography';
+import { getServerQueryClient } from '@/shared/lib/queryClient';
 
 const DashboardPage = () => {
     const queryClient = getServerQueryClient();
@@ -19,8 +20,10 @@ const DashboardPage = () => {
     return (
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 md:px-6">
             <div className="mb-8 flex flex-col gap-2">
-                <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{BRAND.productName} Dashboard</h1>
-                <p className="text-muted-foreground">{BRAND.tagline}</p>
+                <Heading level="page" as="h1">
+                    {BRAND.productName} Dashboard
+                </Heading>
+                <Text variant="muted">{BRAND.tagline}</Text>
             </div>
             <HydrationBoundary state={dehydrate(queryClient)}>
                 <div className="flex flex-col gap-6">
