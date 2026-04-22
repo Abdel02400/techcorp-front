@@ -8,6 +8,7 @@ import { navEntries } from '@/shared/router';
 interface NavigationProps {
     orientation?: 'horizontal' | 'vertical';
     onNavigate?: () => void;
+    className?: string;
 }
 
 const isItemActive = (itemHref: string, pathname: string): boolean => {
@@ -15,11 +16,11 @@ const isItemActive = (itemHref: string, pathname: string): boolean => {
     return pathname === itemHref || pathname.startsWith(`${itemHref}/`);
 };
 
-export const Navigation = ({ orientation = 'horizontal', onNavigate }: NavigationProps) => {
+export const Navigation = ({ orientation = 'horizontal', onNavigate, className }: NavigationProps) => {
     const pathname = usePathname();
 
     return (
-        <nav className={cn('flex gap-1', orientation === 'vertical' ? 'flex-col' : 'flex-row items-center')}>
+        <nav className={cn('flex gap-1', orientation === 'vertical' ? 'flex-col' : 'flex-row items-center', className)}>
             {navEntries.map((entry) => {
                 const active = isItemActive(entry.href, pathname);
                 return (

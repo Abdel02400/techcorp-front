@@ -131,7 +131,21 @@ src/
 │   │   └── ComingSoon.tsx        # placeholder générique
 │   ├── hooks/
 │   │   └── useMounted.ts         # guard d'hydratation (useSyncExternalStore)
-│   ├── layout/                   # Shell app : Header, HeaderSearch, Navigation, ThemeToggle, UserMenu, MobileMenu, BrandMark
+│   ├── layout/                   # Shell app — un dossier par section, prêt pour Footer
+│   │   └── Header/
+│   │       ├── Header.tsx        # composition minimaliste
+│   │       └── components/
+│   │           ├── BrandMark.tsx         # logo + brand name (Link vers home)
+│   │           ├── Navigation.tsx        # liens nav avec état actif via usePathname
+│   │           ├── HeaderSearch.tsx      # search URL-backed active sur /tools
+│   │           ├── MobileMenu.tsx        # drawer Sheet sous md:
+│   │           └── HeaderActions/
+│   │               ├── HeaderActions.tsx # wrapper cluster droit
+│   │               └── components/
+│   │                   ├── ThemeToggle.tsx       # dropdown Light/Dark/System
+│   │                   ├── UserMenu.tsx          # avatar + dropdown
+│   │                   ├── NotificationsButton.tsx
+│   │                   └── SettingsButton.tsx
 │   ├── lib/
 │   │   ├── format.ts             # formatCurrency / formatCurrencyCompact / formatRelativeTime + constantes locales (MS_PER_DAY, DAYS_PER_MONTH, ...)
 │   │   ├── queryClient.ts        # factories serveur/client + QUERY_STALE_TIME_MS + getServerQueryClient

@@ -1,5 +1,5 @@
 import './globals.css';
-import { Header } from '@/shared/layout/Header';
+import { Header } from '@/shared/layout/Header/Header';
 import { inter } from '@/config/fonts';
 import { AppProviders } from '@/shared/providers/AppProviders';
 
