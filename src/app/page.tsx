@@ -1,13 +1,13 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { KpisSection } from '@/components/dashboard/KpisSection';
-import { KpisSkeleton } from '@/components/dashboard/KpisSkeleton';
-import { RecentToolsSection } from '@/components/dashboard/RecentToolsSection';
-import { BRAND } from '@/lib/brand';
-import { getServerQueryClient } from '@/lib/queryClient';
-import { analyticsQueries } from '@/queries/analyticsQueries';
-import { departmentsQueries } from '@/queries/departmentsQueries';
-import { toolsQueries } from '@/queries/toolsQueries';
+import { KpisSection } from '@/features/dashboard/components/KpisSection';
+import { KpisSkeleton } from '@/features/dashboard/components/KpisSkeleton';
+import { RecentToolsSection } from '@/features/dashboard/components/RecentToolsSection';
+import { BRAND } from '@/config/brand';
+import { getServerQueryClient } from '@/shared/lib/queryClient';
+import { analyticsQueries } from '@/features/analytics/queries/analyticsQueries';
+import { departmentsQueries } from '@/features/departments/queries/departmentsQueries';
+import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 
 const DashboardPage = () => {
     const queryClient = getServerQueryClient();

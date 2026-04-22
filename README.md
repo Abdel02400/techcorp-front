@@ -44,7 +44,7 @@ Le fichier `.env.local` (git-ignoré) est requis au lancement. Le fichier `.env.
 | --------------------- | ----------------------------------------- | ----------------------------------------- |
 | `NEXT_PUBLIC_API_URL` | URL de base du JSON server des ressources | `https://tt-jsonserver-01.alt-tools.tech` |
 
-> Toutes les variables préfixées `NEXT_PUBLIC_` sont inlinées dans le bundle client au build — aucune valeur sensible ne doit y figurer. [src/api/config.ts](src/api/config.ts) throw explicitement au chargement du module si la variable manque — fail-fast, pas de dégradation silencieuse.
+> Toutes les variables préfixées `NEXT_PUBLIC_` sont inlinées dans le bundle client au build — aucune valeur sensible ne doit y figurer. [src/shared/api/config.ts](src/shared/api/config.ts) throw explicitement au chargement du module si la variable manque — fail-fast, pas de dégradation silencieuse.
 
 ### Scripts disponibles
 
@@ -71,72 +71,97 @@ Le fichier `.env.local` (git-ignoré) est requis au lancement. Le fichier `.env.
 
 ### Structure du projet
 
+L'architecture suit un pattern **feature-first** (vertical slices) : chaque domaine métier possède sa propre stack complète (api + components + hooks + queries + schemas), et un dossier `shared/` contient le code réellement transverse. C'est le modèle adopté par l'écosystème Next moderne (Epic Stack, bulletproof-react, Vercel templates).
+
 ```
 src/
-├── app/                     # Routes App Router (file-based)
-│   ├── layout.tsx           # root layout (Header + <AppProviders>)
-│   ├── page.tsx             # Dashboard (/)
-│   ├── tools/page.tsx       # Tools catalogue (/tools)
-│   ├── analytics/page.tsx   # Analytics (/analytics)
-│   ├── settings/page.tsx    # Settings (/settings — stub)
-│   ├── error.tsx            # Error boundary global (Try again + Back to dashboard)
-│   ├── not-found.tsx        # 404 branded custom
-│   ├── icon.tsx             # Favicon dynamique via next/og ImageResponse
-│   └── globals.css          # Tailwind v4 @theme inline + tokens shadcn
-├── api/                     # Couche d'accès API
-│   ├── config.ts            # apiBaseUrl (lit NEXT_PUBLIC_API_URL)
-│   ├── http.ts              # Response<T>, ResponseStatus
-│   ├── requestManager.ts    # Classe abstraite : URL build + fetch + Zod + wrap
-│   ├── dto/                 # Schémas Zod + types inférés par ressource
-│   │   ├── toolDto.ts       # toolDtoSchema + toolListSchema (parser tolérant) + toolInputSchema
-│   │   ├── userDto.ts
-│   │   ├── departmentDto.ts
-│   │   ├── userToolDto.ts
-│   │   └── analyticsDto.ts
-│   └── services/            # Services typés (singletons extends RequestManager)
-│       ├── toolsService.ts  # getAll, getRecent, getByStatus, getById, create, update, remove
-│       ├── usersService.ts
-│       ├── departmentsService.ts
-│       ├── userToolsService.ts
-│       └── analyticsService.ts
-├── validators/              # Schémas Zod partagés
-│   ├── commonSchemas.ts     # id, isoDate, url, email, nonNegativeNumber, ...
-│   └── enums.ts             # toolStatus, usageFrequency, proficiencyLevel
-├── queries/                 # Query options TanStack (server + client)
-│   ├── unwrapResponse.ts    # Response<T> → T | throw (adapter TanStack)
-│   ├── toolsQueries.ts
-│   ├── usersQueries.ts
-│   ├── departmentsQueries.ts
-│   ├── userToolsQueries.ts
-│   └── analyticsQueries.ts
-├── components/
-│   ├── ui/                  # shadcn (Button, Input, DropdownMenu, Sheet, Avatar, Separator, Card, Skeleton, Table, Select, Dialog, Label, Textarea, Sonner, Chart)
-│   ├── layout/              # Shell app (Header, HeaderSearch, Navigation, ThemeToggle, UserMenu, MobileMenu, BrandMark)
-│   ├── common/              # Transverse (ComingSoon, StatusBadge, ToolIcon)
-│   ├── dashboard/           # KpiCard, KpisSection, KpisSkeleton, RecentToolsSection, RecentToolsTable, RecentToolsSkeleton
-│   ├── tools/               # ToolsTable, ToolsSkeleton, ToolsFilters, ToolsFiltersSkeleton, ToolForm, ToolFormDialog, DeleteToolDialog, ToolActionsDropdown, AddToolButton
-│   └── analytics/           # BudgetOverviewCard, DepartmentCostChart, StatusDistributionChart, TopExpensiveToolsChart, AnalyticsSkeleton
-├── hooks/                   # Hooks non-data
-│   ├── useMounted.ts        # Guard hydratation (useSyncExternalStore)
-│   └── useToolMutations.ts  # useCreateTool / useUpdateTool / useDeleteTool / useToggleToolStatus
-├── lib/
-│   ├── brand.ts             # BRAND (name, productName, tagline)
-│   ├── env.ts               # isDev / isProd / isTest (tree-shaken au build)
-│   ├── fonts.ts             # Police Inter (liée à --font-sans)
-│   ├── format.ts            # formatCurrency, formatCurrencyCompact, formatRelativeTime
-│   ├── metadata.ts          # rootMetadata (titre, description)
-│   ├── queryClient.ts       # Factories serveur/client + QUERY_STALE_TIME_MS + getServerQueryClient (React.cache)
-│   └── utils.ts             # Helper cn() (clsx + tailwind-merge)
-└── providers/
-    └── AppProviders.tsx     # ThemeProvider + QueryClientProvider + Toaster + Devtools
+├── app/                          # Next routing (thin layer)
+│   ├── layout.tsx                # root layout (Header + <AppProviders>)
+│   ├── page.tsx                  # Dashboard (/)
+│   ├── tools/page.tsx            # Tools catalogue (/tools)
+│   ├── analytics/page.tsx        # Analytics (/analytics)
+│   ├── settings/page.tsx         # Settings (/settings — stub)
+│   ├── error.tsx                 # Error boundary global
+│   ├── not-found.tsx             # 404 branded
+│   ├── icon.tsx                  # Favicon dynamique via next/og
+│   └── globals.css               # Tailwind v4 @theme inline + tokens shadcn
+│
+├── features/                     # Business code par domaine (vertical slices)
+│   ├── tools/
+│   │   ├── api/
+│   │   │   └── toolsService.ts   # extends RequestManager, CRUD + filters
+│   │   ├── components/           # ToolsTable, ToolsFilters, ToolForm(Dialog), DeleteToolDialog, ToolActionsDropdown, AddToolButton, ToolsSkeleton, StatusBadge, ToolIcon, ...
+│   │   ├── hooks/
+│   │   │   └── useToolMutations.ts  # 4 mutations (create/update/delete/toggle) + Sonner toasts
+│   │   ├── queries/
+│   │   │   └── toolsQueries.ts   # queryOptions namespace
+│   │   └── schemas/
+│   │       ├── tool.ts           # toolDtoSchema + toolListSchema (tolerant) + toolInputSchema + ToolDto/ToolInput
+│   │       └── enums.ts          # toolStatusSchema + ToolStatus
+│   ├── analytics/
+│   │   ├── api/analyticsService.ts
+│   │   ├── components/           # BudgetOverviewCard + 3 charts (Department, Status, TopExpensive) + Skeleton
+│   │   ├── queries/analyticsQueries.ts
+│   │   └── schemas/analytics.ts
+│   ├── dashboard/
+│   │   └── components/           # KpiCard, KpisSection(+Skeleton), RecentToolsSection/Table/Skeleton (compose tools+analytics+departments)
+│   ├── departments/
+│   │   ├── api/departmentsService.ts
+│   │   ├── queries/departmentsQueries.ts
+│   │   └── schemas/department.ts
+│   ├── users/
+│   │   ├── api/usersService.ts
+│   │   ├── queries/usersQueries.ts
+│   │   └── schemas/user.ts
+│   └── user-tools/
+│       ├── api/userToolsService.ts
+│       ├── queries/userToolsQueries.ts
+│       └── schemas/
+│           ├── userTool.ts
+│           └── enums.ts          # usageFrequency + proficiencyLevel
+│
+├── shared/                       # code cross-feature (2+ consommateurs)
+│   ├── api/
+│   │   ├── config.ts             # apiBaseUrl (NEXT_PUBLIC_API_URL)
+│   │   ├── http.ts               # Response<T>, ResponseStatus
+│   │   └── requestManager.ts     # classe abstraite
+│   ├── components/
+│   │   ├── ui/                   # shadcn primitives (Button, Input, Card, Dialog, Table, Chart, ...)
+│   │   └── ComingSoon.tsx        # placeholder générique
+│   ├── hooks/
+│   │   └── useMounted.ts         # guard d'hydratation (useSyncExternalStore)
+│   ├── layout/                   # Shell app : Header, HeaderSearch, Navigation, ThemeToggle, UserMenu, MobileMenu, BrandMark, navItems
+│   ├── lib/
+│   │   ├── format.ts             # formatCurrency / formatCurrencyCompact / formatRelativeTime
+│   │   ├── queryClient.ts        # factories serveur/client + QUERY_STALE_TIME_MS + getServerQueryClient
+│   │   └── utils.ts              # cn() helper
+│   ├── providers/
+│   │   └── AppProviders.tsx      # ThemeProvider + QueryClientProvider + Toaster + Devtools
+│   ├── queries/
+│   │   └── unwrapResponse.ts     # adapter Response<T> → T | throw
+│   └── schemas/
+│       └── commonSchemas.ts      # primitives Zod génériques (idSchema, urlSchema, emailSchema, isoDateTimeSchema, ...)
+│
+└── config/                       # configuration statique
+    ├── brand.ts                  # BRAND { name, productName, tagline }
+    ├── env.ts                    # isDev / isProd / isTest (tree-shaken au build)
+    ├── fonts.ts                  # Inter (liée à --font-sans)
+    └── metadata.ts               # rootMetadata (titre, description)
 ```
+
+### Règles de dépendance (visées, non enforced pour l'instant)
+
+- `config/` ne dépend de rien (pure data)
+- `shared/` peut dépendre de `config/` uniquement — jamais de `features/`
+- `features/<a>/` peut dépendre de `shared/`, `config/`, et d'autres `features/<b>/` **si la dépendance est logique** (ex : `features/analytics` dépend de `features/tools` pour réutiliser `StatusBadge`/`ToolIcon`). Une règle ESLint `import/no-restricted-paths` pourra être ajoutée plus tard pour formaliser ce graphe.
+- `app/` est l'assembleur final, importe tout ce dont il a besoin.
 
 ### API Layer
 
 Contrat de retour uniforme — chaque méthode de service retourne une `Response<T>` (discriminated union), **ne throw jamais** :
 
 ```ts
-// src/api/http.ts
+// src/shared/api/http.ts
 export type OkResponse<T> = { status: ResponseStatus.Ok; data: T };
 export type KoResponse = { status: ResponseStatus.Ko; message?: string };
 export type Response<T> = OkResponse<T> | KoResponse;
@@ -177,7 +202,7 @@ Le parcours utilisateur cible est l'**admin IT** qui arrive sur le Dashboard dep
 
 **Pattern de navigation cohérent cross-page** :
 
-- **`Header` partagé** ([src/components/layout/Header.tsx](src/components/layout/Header.tsx)) avec sticky top, backdrop blur, et actif déterminé par `usePathname` → état visuel `bg-accent` sur l'item courant.
+- **`Header` partagé** ([src/shared/layout/Header.tsx](src/shared/layout/Header.tsx)) avec sticky top, backdrop blur, et actif déterminé par `usePathname` → état visuel `bg-accent` sur l'item courant.
 - **Search bar dans le header** qui s'adapte au contexte — active sur `/tools` (filtre le catalogue via `?search=`), disabled ailleurs (placeholder générique, pas de fonctionnalité fantôme).
 - **Mobile menu** (drawer Sheet) sous `md:` — mêmes nav items, fermeture automatique au click.
 - **Theme toggle** (Light / Dark / System) via `next-themes`, persisté dans localStorage et synchronisé avec la préférence OS.
@@ -226,8 +251,8 @@ Les 4 principes qui ont tenu la cohérence sans maquette pour les jours 7 et 8 :
 
 ### Trois couches entre l'API et le composant qui affiche
 
-1. **Service** ([src/api/services/](src/api/services/)) — class extends `RequestManager`, expose les méthodes métier, retourne `Response<T>`. Stateless, testable isolément.
-2. **Query options** ([src/queries/](src/queries/)) — `queryOptions({ queryKey, queryFn })` qui wrap le service. Partagé serveur (`prefetchQuery`) et client (`useSuspenseQuery`). `unwrapResponse` adapte `Response<T>` → `T | throw` pour être compatible avec le protocole d'erreur TanStack.
+1. **Service** ([src/features/<feature>/api/](src/features/<feature>/api/)) — class extends `RequestManager`, expose les méthodes métier, retourne `Response<T>`. Stateless, testable isolément.
+2. **Query options** ([src/features/<feature>/queries/](src/features/<feature>/queries/)) — `queryOptions({ queryKey, queryFn })` qui wrap le service. Partagé serveur (`prefetchQuery`) et client (`useSuspenseQuery`). `unwrapResponse` adapte `Response<T>` → `T | throw` pour être compatible avec le protocole d'erreur TanStack.
 3. **Component** — `useSuspenseQuery(queries.x())` côté client, `queryClient.prefetchQuery(queries.x())` côté Server Component parent.
 
 ### SSR + Streaming + Suspense
@@ -247,7 +272,7 @@ Pattern officiel TanStack × Next App Router :
 
 ### QueryClient par-request côté serveur
 
-`QueryClient` instancié **une fois par requête** via `React.cache` dans [src/lib/queryClient.ts](src/lib/queryClient.ts) — garantit zéro cross-contamination entre users en prod. Côté client, un `QueryClient` unique est créé via `useState` dans `AppProviders`. Les deux factories partagent `QUERY_STALE_TIME_MS` comme source de vérité.
+`QueryClient` instancié **une fois par requête** via `React.cache` dans [src/shared/lib/queryClient.ts](src/shared/lib/queryClient.ts) — garantit zéro cross-contamination entre users en prod. Côté client, un `QueryClient` unique est créé via `useState` dans `AppProviders`. Les deux factories partagent `QUERY_STALE_TIME_MS` comme source de vérité.
 
 ### Deux niveaux de défense contre la data "dirty"
 
@@ -314,8 +339,8 @@ Tous les boutons / inputs respectent la guideline touch target (~44×44 CSS pixe
 
 - **Turbopack** par défaut en dev ET build (Next 16)
 - **Toutes les 5 routes prerenderent en static** (`○` dans le `next build` output) — pas de serveur Node nécessaire pour servir le HTML initial
-- **Tree-shaking agressif** : `process.env.NODE_ENV` est inliné au build → `isDev && <ReactQueryDevtools />` dans [src/providers/AppProviders.tsx](src/providers/AppProviders.tsx) est littéralement droppé du bundle prod
-- **Devtools en dev uniquement** via le guard `isDev` des helpers [src/lib/env.ts](src/lib/env.ts)
+- **Tree-shaking agressif** : `process.env.NODE_ENV` est inliné au build → `isDev && <ReactQueryDevtools />` dans [src/shared/providers/AppProviders.tsx](src/shared/providers/AppProviders.tsx) est littéralement droppé du bundle prod
+- **Devtools en dev uniquement** via le guard `isDev` des helpers [src/config/env.ts](src/config/env.ts)
 - **Favicon dynamique** via `next/og` `ImageResponse` → PNG généré au build, zéro fichier binaire à maintenir, cohérent avec `<BrandMark>` par construction
 
 ### Data fetching
@@ -340,7 +365,7 @@ Tous les boutons / inputs respectent la guideline touch target (~44×44 CSS pixe
 
 ### Images
 
-Icônes d'outils via `<img>` + fallback `onError` qui affiche l'initiale (composant [src/components/common/ToolIcon.tsx](src/components/common/ToolIcon.tsx)). Pas de `next/image` parce que les hosts CDN sont arbitraires (logo.clearbit.com, fonts perso, etc.) — le gain d'optimisation sur 24×24px ne justifie pas le coût de maintenance d'une whitelist `remotePatterns`.
+Icônes d'outils via `<img>` + fallback `onError` qui affiche l'initiale (composant [src/features/tools/components/ToolIcon.tsx](src/features/tools/components/ToolIcon.tsx)). Pas de `next/image` parce que les hosts CDN sont arbitraires (logo.clearbit.com, fonts perso, etc.) — le gain d'optimisation sur 24×24px ne justifie pas le coût de maintenance d'une whitelist `remotePatterns`.
 
 ---
 

@@ -3,8 +3,8 @@
 import { AlertTriangle, Home, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { isDev } from '@/lib/env';
+import { Button } from '@/shared/components/ui/button';
+import { isDev } from '@/config/env';
 
 interface ErrorPageProps {
     error: Error & { digest?: string };

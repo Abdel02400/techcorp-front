@@ -1,13 +1,13 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { AnalyticsSkeleton } from '@/components/analytics/AnalyticsSkeleton';
-import { BudgetOverviewCard } from '@/components/analytics/BudgetOverviewCard';
-import { DepartmentCostChart } from '@/components/analytics/DepartmentCostChart';
-import { StatusDistributionChart } from '@/components/analytics/StatusDistributionChart';
-import { TopExpensiveToolsChart } from '@/components/analytics/TopExpensiveToolsChart';
-import { getServerQueryClient } from '@/lib/queryClient';
-import { analyticsQueries } from '@/queries/analyticsQueries';
-import { toolsQueries } from '@/queries/toolsQueries';
+import { AnalyticsSkeleton } from '@/features/analytics/components/AnalyticsSkeleton';
+import { BudgetOverviewCard } from '@/features/analytics/components/BudgetOverviewCard';
+import { DepartmentCostChart } from '@/features/analytics/components/DepartmentCostChart';
+import { StatusDistributionChart } from '@/features/analytics/components/StatusDistributionChart';
+import { TopExpensiveToolsChart } from '@/features/analytics/components/TopExpensiveToolsChart';
+import { getServerQueryClient } from '@/shared/lib/queryClient';
+import { analyticsQueries } from '@/features/analytics/queries/analyticsQueries';
+import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 
 const AnalyticsPage = () => {
     const queryClient = getServerQueryClient();

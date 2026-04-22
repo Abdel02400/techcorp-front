@@ -1,13 +1,13 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { AddToolButton } from '@/components/tools/AddToolButton';
-import { ToolsFilters } from '@/components/tools/ToolsFilters';
-import { ToolsFiltersSkeleton } from '@/components/tools/ToolsFiltersSkeleton';
-import { ToolsSkeleton } from '@/components/tools/ToolsSkeleton';
-import { ToolsTable } from '@/components/tools/ToolsTable';
-import { Card } from '@/components/ui/card';
-import { getServerQueryClient } from '@/lib/queryClient';
-import { toolsQueries } from '@/queries/toolsQueries';
+import { AddToolButton } from '@/features/tools/components/AddToolButton';
+import { ToolsFilters } from '@/features/tools/components/ToolsFilters';
+import { ToolsFiltersSkeleton } from '@/features/tools/components/ToolsFiltersSkeleton';
+import { ToolsSkeleton } from '@/features/tools/components/ToolsSkeleton';
+import { ToolsTable } from '@/features/tools/components/ToolsTable';
+import { Card } from '@/shared/components/ui/card';
+import { getServerQueryClient } from '@/shared/lib/queryClient';
+import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 
 const ToolsPage = () => {
     const queryClient = getServerQueryClient();

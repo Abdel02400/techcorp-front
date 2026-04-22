@@ -1,4 +1,4 @@
-import { ComingSoon } from '@/components/common/ComingSoon';
+import { ComingSoon } from '@/shared/components/ComingSoon';
 
 const SettingsPage = () => <ComingSoon title="Settings" subtitle="Coming soon." />;
 

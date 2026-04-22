@@ -1,9 +1,9 @@
 import './globals.css';
-import { Header } from '@/components/layout/Header';
-import { inter } from '@/lib/fonts';
-import { AppProviders } from '@/providers/AppProviders';
+import { Header } from '@/shared/layout/Header';
+import { inter } from '@/config/fonts';
+import { AppProviders } from '@/shared/providers/AppProviders';
 
-export { rootMetadata as metadata } from '@/lib/metadata';
+export { rootMetadata as metadata } from '@/config/metadata';
 
 const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
     return (
