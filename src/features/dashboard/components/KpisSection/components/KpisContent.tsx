@@ -2,13 +2,13 @@
 
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Banknote, Building2, UsersRound, Wrench } from 'lucide-react';
-import { KpiCard } from '@/features/dashboard/components/KpiCard';
-import { formatCurrency, formatCurrencyCompact } from '@/shared/lib/format';
 import { analyticsQueries } from '@/features/analytics/queries/analyticsQueries';
+import { KpiCard } from '@/features/dashboard/components/KpiCard';
 import { departmentsQueries } from '@/features/departments/queries/departmentsQueries';
 import { toolsQueries } from '@/features/tools/queries/toolsQueries';
+import { formatCurrency, formatCurrencyCompact } from '@/shared/lib/format';
 
-export const KpisSection = () => {
+export const KpisContent = () => {
     const [{ data: analytics }, { data: tools }, { data: departments }] = useSuspenseQueries({
         queries: [analyticsQueries.get(), toolsQueries.all(), departmentsQueries.all()],
     });

@@ -1,11 +1,9 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
-import { Suspense } from 'react';
 import { BRAND } from '@/config/brand';
 import { analyticsQueries } from '@/features/analytics/queries/analyticsQueries';
 import { departmentsQueries } from '@/features/departments/queries/departmentsQueries';
-import { KpisSection } from '@/features/dashboard/components/KpisSection';
-import { KpisSkeleton } from '@/features/dashboard/components/KpisSkeleton';
-import { RecentToolsSection } from '@/features/dashboard/components/RecentToolsSection';
+import { KpisSection } from '@/features/dashboard/components/KpisSection/KpisSection';
+import { RecentToolsSection } from '@/features/dashboard/components/RecentToolsSection/RecentToolsSection';
 import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 import { Heading, Text } from '@/shared/components/typography';
 import { getServerQueryClient } from '@/shared/lib/queryClient';
@@ -14,7 +12,6 @@ const DashboardPage = () => {
     const queryClient = getServerQueryClient();
     void queryClient.prefetchQuery(analyticsQueries.get());
     void queryClient.prefetchQuery(toolsQueries.all());
-    void queryClient.prefetchQuery(toolsQueries.recent(8));
     void queryClient.prefetchQuery(departmentsQueries.all());
 
     return (
@@ -27,9 +24,7 @@ const DashboardPage = () => {
             </div>
             <HydrationBoundary state={dehydrate(queryClient)}>
                 <div className="flex flex-col gap-6">
-                    <Suspense fallback={<KpisSkeleton />}>
-                        <KpisSection />
-                    </Suspense>
+                    <KpisSection />
                     <RecentToolsSection />
                 </div>
             </HydrationBoundary>

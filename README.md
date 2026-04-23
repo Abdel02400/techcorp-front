@@ -88,7 +88,13 @@ src/
 │   ├── tools/
 │   │   ├── api/
 │   │   │   └── toolsService.ts   # extends RequestManager, CRUD + filters
-│   │   ├── components/           # ToolsTable, ToolsFilters, ToolForm(Dialog), DeleteToolDialog, ToolActionsDropdown, AddToolButton, ToolsSkeleton, StatusBadge, ToolIcon, ...
+│   │   ├── components/           # atomes (StatusBadge, ToolIcon, KpiCard), dialogs (ToolFormDialog, DeleteToolDialog, ToolForm), actions (AddToolButton, ToolActionsDropdown) + 2 blocs data-fetching en dossiers dédiés :
+│   │   │   ├── ToolsFilters/
+│   │   │   │   ├── ToolsFilters.tsx         # wrapper Block + skeleton
+│   │   │   │   └── components/{ToolsFiltersContent, ToolsFiltersSkeleton}.tsx
+│   │   │   └── ToolsTable/
+│   │   │       ├── ToolsTable.tsx            # wrapper Block + skeleton
+│   │   │       └── components/{ToolsTableContent, ToolsTableSkeleton}.tsx
 │   │   ├── hooks/
 │   │   │   └── useToolMutations.ts       # 4 mutations (create/update/delete/toggle) + Sonner toasts
 │   │   ├── queries/
@@ -98,11 +104,22 @@ src/
 │   │       └── enums.ts          # toolStatusSchema + ToolStatus
 │   ├── analytics/
 │   │   ├── api/analyticsService.ts
-│   │   ├── components/           # BudgetOverviewCard + 3 charts (Department, Status, TopExpensive) + Skeleton
+│   │   ├── components/           # 4 blocs en dossiers dédiés, chacun avec wrapper (ErrorBoundary + Suspense) + Header + Content + Skeleton :
+│   │   │   ├── BudgetOverviewCard/{BudgetOverviewCard.tsx, components/{Header,Content,Skeleton}.tsx}
+│   │   │   ├── DepartmentCostChart/{...}
+│   │   │   ├── StatusDistributionChart/{...}
+│   │   │   └── TopExpensiveToolsChart/{...}
 │   │   ├── queries/analyticsQueries.ts
 │   │   └── schemas/analytics.ts
 │   ├── dashboard/
-│   │   └── components/           # KpiCard, KpisSection(+Skeleton), RecentToolsSection/Table/Skeleton (compose tools+analytics+departments)
+│   │   └── components/
+│   │       ├── KpiCard.tsx                  # atom (props only, pas de fetch) — réutilisable
+│   │       ├── KpisSection/                 # bloc data-fetching (3 queries en parallèle via useSuspenseQueries), Block + Skeleton
+│   │       │   ├── KpisSection.tsx
+│   │       │   └── components/{KpisContent, KpisSkeleton}.tsx
+│   │       └── RecentToolsSection/          # bloc data-fetching (1 query), Card custom + Block + Header/Content/Skeleton (table avec sort + pagination 10/page)
+│   │           ├── RecentToolsSection.tsx
+│   │           └── components/{RecentToolsHeader, RecentToolsContent, RecentToolsSkeleton}.tsx
 │   ├── departments/
 │   │   ├── api/departmentsService.ts
 │   │   ├── queries/departmentsQueries.ts
@@ -121,6 +138,7 @@ src/
 ├── shared/                       # code cross-feature (2+ consommateurs)
 │   ├── api/
 │   │   ├── config.ts             # apiBaseUrl (NEXT_PUBLIC_API_URL)
+│   │   ├── resources.ts          # registry central des ressources API (single source) — chaque entrée expose `.key` (pour query keys) + `.endpoint` (pour URL paths)
 │   │   ├── http.ts               # Response<T>, ResponseStatus
 │   │   └── requestManager.ts     # classe abstraite
 │   ├── components/
@@ -128,6 +146,9 @@ src/
 │   │   ├── Logo.tsx              # logo partagé (BrandMark + favicon dynamique via next/og)
 │   │   ├── NavLink.tsx           # Link Next + aria-current automatique, cva variants pill / tab
 │   │   ├── SearchInput.tsx       # search input shared (Suspense + Skeleton + clear + submit-on-Enter)
+│   │   ├── Block.tsx             # ErrorBoundary + QueryErrorResetBoundary + Suspense (slots skeleton/children) — pour blocs hors Card
+│   │   ├── BlockCard.tsx         # Card + header + Block (CardContent wrapping autour du retry) — pour blocs dans une Card
+│   │   ├── BlockRetry.tsx        # UI de retry partagée pour les ErrorBoundary block-level
 │   │   └── typography.tsx        # Heading + Text avec variants cva (single source of truth typo)
 │   ├── hooks/
 │   │   ├── useMounted.ts         # guard d'hydratation (useSyncExternalStore)
@@ -155,6 +176,7 @@ src/
 │   ├── providers/
 │   │   └── AppProviders.tsx      # ThemeProvider + QueryClientProvider + Toaster + Devtools
 │   ├── queries/
+│   │   ├── buildKey.ts           # helper `<const>` generic qui construit un tuple readonly sans `as const` au call site
 │   │   └── unwrapResponse.ts     # adapters : unwrapResponse (sync) + unwrap (promise chaining pour queryFn)
 │   ├── router/                   # Router typé + registry de routes
 │   │   ├── types.ts              # RouteConfig (discriminated union static/dynamic), NavMeta, ExtractParams
@@ -191,18 +213,53 @@ export type KoResponse = { status: ResponseStatus.Ko; message?: string };
 export type Response<T> = OkResponse<T> | KoResponse;
 ```
 
-`RequestManager` (abstract) factorise la construction d'URL avec query params, les headers par défaut, l'appel `fetch`, le safeParse Zod et le wrapping `Response<T>`. Les services concrets étendent cette classe et ne déclarent que leur `basePath` + leurs méthodes métier.
+`RequestManager` (abstract) factorise la construction d'URL avec query params, les headers par défaut, l'appel `fetch`, le safeParse Zod et le wrapping `Response<T>`. Les services concrets étendent cette classe et ne déclarent que leur `basePath` (pioché dans `resources`) + leurs méthodes métier.
+
+**Single source of truth** — `resources.ts` regroupe le nom de chaque ressource API une seule fois, et expose deux facettes dérivées :
 
 ```ts
+// src/shared/api/resources.ts
+const define = <const T extends string>(name: T): { key: T; endpoint: `/${T}` } => ({
+    key: name,
+    endpoint: `/${name}`,
+});
+
+export const resources = {
+    analytics: define('analytics'),
+    departments: define('departments'),
+    tools: define('tools'),
+    users: define('users'),
+    userTools: define('user_tools'),
+};
+```
+
+- `resources.tools.endpoint` → `'/tools'` (URL path, utilisé par les services)
+- `resources.tools.key` → `'tools'` (racine de query key, utilisée par les queries TanStack)
+
+Les types littéraux sont préservés via un `<const>` generic sur `define` + template literal type `` `/${T}` `` pour l'endpoint. Pas de `as const` à maintenir.
+
+```ts
+// src/features/tools/api/toolsService.ts
 class ToolsService extends RequestManager {
-    protected readonly basePath = '/tools';
+    protected readonly basePath = resources.tools.endpoint;
 
     public async getRecent(limit = 8): Promise<Response<ToolDto[]>> {
         return this.request('', toolListSchema, { params: { _sort: 'updated_at', _order: 'desc', _limit: limit * 4 } });
     }
 }
 export const toolsService = new ToolsService();
+
+// src/features/tools/queries/toolsQueries.ts
+export const toolsQueries = {
+    all: () => queryOptions({
+        queryKey: buildKey(resources.tools.key, 'all'),    // readonly ['tools', 'all']
+        queryFn: () => unwrap(toolsService.getAll()),
+    }),
+    ...
+};
 ```
+
+Si l'API JSON server renomme une ressource (ex: `/user_tools` → `/user-tools`), **1 seule ligne à changer** dans `resources.ts` — services ET query keys répercutent. `buildKey` (dans `shared/queries/buildKey.ts`) est un wrapper générique `<const>` qui capture le tuple readonly sans avoir à écrire `as const` au call site.
 
 Côté consommateur, un narrow TS donne l'accès typé sans effort :
 
@@ -519,9 +576,10 @@ GitHub Actions qui bloque les PR sur : `pnpm lint` + `pnpm format:check` + `pnpm
 - **Bulk operations dans Tools** (multi-select + bulk delete / bulk toggle / bulk archive) — déjà structuré dans la roadmap
 - **Cross-page navigation depuis Analytics** : click sur un slice du `DepartmentCostChart` → `/tools?department=X`, click sur `StatusDistributionChart` → `/tools?status=X` (commit de polish planifié juste après ce README)
 - **View details dédié** (Sheet read-only) pour voir un tool sans ouvrir le form d'édition
-- **Error boundaries** autour des Suspense (fallback propre si l'API fail complètement, pas juste skeleton infini)
+- ~~**Error boundaries** autour des Suspense~~ ✅ fait sur Analytics + Dashboard + Tools — chaque bloc data-fetching a son propre `ErrorBoundary` (react-error-boundary) + `QueryErrorResetBoundary` de TanStack Query via les primitives partagées `<Block>` (hors Card) et `<BlockCard>` (dans Card). Si une query plante, seul ce bloc affiche `<BlockRetry>` (icône + message + bouton Retry), les autres blocs restent fonctionnels.
 - **Time range picker** sur Analytics si le JSON server expose un jour `/analytics?from=...&to=...`
 - **Tests unitaires** sur les helpers pures et les primitives réutilisées
+- **Aligner le header du `RecentToolsSection`** : depuis l'ajout du sort + pagination sur `RecentToolsTable`, le tableau affiche tous les tools (pas seulement les 8 récents). Le sous-titre "Last 30 days" devient trompeur — à remplacer par un compteur total (ex: "42 tools") ou retirer, selon la direction produit
 
 ### Moyen terme (produit)
 

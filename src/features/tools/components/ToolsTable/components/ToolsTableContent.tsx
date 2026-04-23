@@ -4,17 +4,17 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
 import { StatusBadge } from '@/features/tools/components/StatusBadge';
-import { ToolIcon } from '@/features/tools/components/ToolIcon';
 import { ToolActionsDropdown } from '@/features/tools/components/ToolActionsDropdown';
+import { ToolIcon } from '@/features/tools/components/ToolIcon';
+import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
 import { formatCurrency, formatRelativeTime } from '@/shared/lib/format';
-import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 
 const matchesSearch = (search: string, ...fields: (string | undefined)[]): boolean => {
     return fields.some((field) => field?.toLowerCase().includes(search) ?? false);
 };
 
-export const ToolsTable = () => {
+export const ToolsTableContent = () => {
     const { data: tools } = useSuspenseQuery(toolsQueries.all());
     const searchParams = useSearchParams();
 

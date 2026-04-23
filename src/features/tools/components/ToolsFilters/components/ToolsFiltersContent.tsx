@@ -11,13 +11,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { path } from '@/shared/router';
 
 const ALL_VALUE = '__all__';
+const ALL_DEPARTMENTS_LABEL = 'All departments';
+const ALL_STATUSES_LABEL = 'All statuses';
+const ALL_CATEGORIES_LABEL = 'All categories';
 const FILTER_KEYS = ['department', 'status', 'category', 'min_cost', 'max_cost'] as const;
+
+const STATUS_LABELS: Record<string, string> = {
+    active: 'Active',
+    expiring: 'Expiring',
+    unused: 'Unused',
+};
 
 const uniqueStrings = (values: (string | undefined)[]): string[] => {
     return Array.from(new Set(values.filter((value): value is string => Boolean(value)))).sort();
 };
 
-export const ToolsFilters = () => {
+const formatIdentity = (value: string, allLabel: string) => (value === ALL_VALUE ? allLabel : value);
+const formatStatus = (value: string, allLabel: string) => (value === ALL_VALUE ? allLabel : (STATUS_LABELS[value] ?? value));
+
+export const ToolsFiltersContent = () => {
     const { data: tools } = useSuspenseQuery(toolsQueries.all());
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -53,10 +65,10 @@ export const ToolsFilters = () => {
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
             <Select value={currentDepartment} onValueChange={(value) => updateParam('department', value)}>
                 <SelectTrigger className="w-44" aria-label="Filter by department">
-                    <SelectValue />
+                    <SelectValue>{formatIdentity(currentDepartment, ALL_DEPARTMENTS_LABEL)}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value={ALL_VALUE}>All departments</SelectItem>
+                    <SelectItem value={ALL_VALUE}>{ALL_DEPARTMENTS_LABEL}</SelectItem>
                     {departments.map((department) => (
                         <SelectItem key={department} value={department}>
                             {department}
@@ -67,10 +79,10 @@ export const ToolsFilters = () => {
 
             <Select value={currentStatus} onValueChange={(value) => updateParam('status', value)}>
                 <SelectTrigger className="w-36" aria-label="Filter by status">
-                    <SelectValue />
+                    <SelectValue>{formatStatus(currentStatus, ALL_STATUSES_LABEL)}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value={ALL_VALUE}>All statuses</SelectItem>
+                    <SelectItem value={ALL_VALUE}>{ALL_STATUSES_LABEL}</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="expiring">Expiring</SelectItem>
                     <SelectItem value="unused">Unused</SelectItem>
@@ -79,10 +91,10 @@ export const ToolsFilters = () => {
 
             <Select value={currentCategory} onValueChange={(value) => updateParam('category', value)}>
                 <SelectTrigger className="w-44" aria-label="Filter by category">
-                    <SelectValue />
+                    <SelectValue>{formatIdentity(currentCategory, ALL_CATEGORIES_LABEL)}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value={ALL_VALUE}>All categories</SelectItem>
+                    <SelectItem value={ALL_VALUE}>{ALL_CATEGORIES_LABEL}</SelectItem>
                     {categories.map((category) => (
                         <SelectItem key={category} value={category}>
                             {category}

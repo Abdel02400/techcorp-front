@@ -2,10 +2,11 @@ import { z } from 'zod';
 import { toolDtoSchema, toolListSchema, type ToolDto, type ToolInput } from '@/features/tools/schemas/tool';
 import { ResponseStatus, type Response } from '@/shared/api/http';
 import RequestManager from '@/shared/api/requestManager';
+import { resources } from '@/shared/api/resources';
 import type { ToolStatus } from '@/features/tools/schemas/enums';
 
 class ToolsService extends RequestManager {
-    protected readonly basePath = '/tools';
+    protected readonly basePath = resources.tools.endpoint;
 
     public async getAll(): Promise<Response<ToolDto[]>> {
         return this.request('', toolListSchema);
