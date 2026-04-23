@@ -1,9 +1,11 @@
+import type { LucideIcon } from 'lucide-react';
 import type { Route } from 'next';
 
 export type PathOptions = Record<string, string | number | boolean>;
 
 export interface NavMeta {
     label: string;
+    icon: LucideIcon;
 }
 
 // A static route that Next resolves directly; can appear in the header navigation

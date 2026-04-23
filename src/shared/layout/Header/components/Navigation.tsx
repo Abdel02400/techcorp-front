@@ -1,40 +1,14 @@
-'use client';
-
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/shared/lib/utils';
+import { NavLink } from '@/shared/components/NavLink';
 import { navEntries } from '@/shared/router';
 
-interface NavigationProps {
-    orientation?: 'horizontal' | 'vertical';
-    onNavigate?: () => void;
-    className?: string;
-}
-
-const isItemActive = (itemHref: string, pathname: string): boolean => {
-    if (itemHref === '/') return pathname === '/';
-    return pathname === itemHref || pathname.startsWith(`${itemHref}/`);
-};
-
-export const Navigation = ({ orientation = 'horizontal', onNavigate, className }: NavigationProps) => {
-    const pathname = usePathname();
-
+export const Navigation = () => {
     return (
-        <nav className={cn('flex gap-1', orientation === 'vertical' ? 'flex-col' : 'flex-row items-center', className)}>
-            {navEntries.map((entry) => {
-                const active = isItemActive(entry.href, pathname);
-                return (
-                    <Link
-                        key={entry.href}
-                        href={entry.href}
-                        onClick={onNavigate}
-                        className={cn('rounded-md px-3 py-1.5 text-sm font-medium transition-colors', active ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground', orientation === 'vertical' && 'w-full')}
-                        aria-current={active ? 'page' : undefined}
-                    >
-                        {entry.label}
-                    </Link>
-                );
-            })}
+        <nav className="ml-6 hidden items-center gap-1 lg:flex">
+            {navEntries.map((entry) => (
+                <NavLink key={entry.href} href={entry.href}>
+                    {entry.label}
+                </NavLink>
+            ))}
         </nav>
     );
 };

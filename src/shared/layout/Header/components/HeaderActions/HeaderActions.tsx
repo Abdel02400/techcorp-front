@@ -4,7 +4,7 @@ import { UserMenu } from '@/shared/layout/Header/components/HeaderActions/compon
 
 export const HeaderActions = () => {
     return (
-        <div className="ml-auto flex items-center gap-1 md:ml-0">
+        <div className="ml-auto flex items-center gap-1 lg:ml-0">
             <ThemeToggle />
             <NotificationsButton />
             <UserMenu />

@@ -18,7 +18,7 @@ const DashboardPage = () => {
     void queryClient.prefetchQuery(departmentsQueries.all());
 
     return (
-        <main className="mx-auto w-full max-w-app flex-1 px-4 py-8 md:px-6">
+        <main className="mx-auto w-full max-w-app flex-1 px-4 py-8 pb-24 md:px-6 lg:pb-8">
             <div className="mb-8 flex flex-col gap-2">
                 <Heading level="page" as="h1">
                     {BRAND.productName} Dashboard

@@ -15,7 +15,7 @@ const ToolsPage = () => {
     void queryClient.prefetchQuery(toolsQueries.all());
 
     return (
-        <main className="mx-auto w-full max-w-app flex-1 px-4 py-8 md:px-6">
+        <main className="mx-auto w-full max-w-app flex-1 px-4 py-8 pb-24 md:px-6 lg:pb-8">
             <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
                 <div className="flex flex-col gap-2">
                     <Heading level="page" as="h1">

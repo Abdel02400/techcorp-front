@@ -1,4 +1,5 @@
 import './globals.css';
+import { BottomTabBar } from '@/shared/layout/BottomTabBar/BottomTabBar';
 import { Header } from '@/shared/layout/Header/Header';
 import { inter } from '@/config/fonts';
 import { AppProviders } from '@/shared/providers/AppProviders';
@@ -12,6 +13,7 @@ const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
                 <AppProviders>
                     <Header />
                     {children}
+                    <BottomTabBar />
                 </AppProviders>
             </body>
         </html>

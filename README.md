@@ -90,7 +90,7 @@ src/
 │   │   │   └── toolsService.ts   # extends RequestManager, CRUD + filters
 │   │   ├── components/           # ToolsTable, ToolsFilters, ToolForm(Dialog), DeleteToolDialog, ToolActionsDropdown, AddToolButton, ToolsSkeleton, StatusBadge, ToolIcon, ...
 │   │   ├── hooks/
-│   │   │   └── useToolMutations.ts  # 4 mutations (create/update/delete/toggle) + Sonner toasts
+│   │   │   └── useToolMutations.ts       # 4 mutations (create/update/delete/toggle) + Sonner toasts
 │   │   ├── queries/
 │   │   │   └── toolsQueries.ts   # queryOptions namespace
 │   │   └── schemas/
@@ -124,24 +124,30 @@ src/
 │   │   ├── http.ts               # Response<T>, ResponseStatus
 │   │   └── requestManager.ts     # classe abstraite
 │   ├── components/
-│   │   ├── ui/                   # shadcn primitives (Button, Input, Card, Dialog, Table, Chart, ...)
+│   │   ├── ui/                   # shadcn primitives (Button, Input, Card, Dialog, Table, Chart, Drawer, Skeleton, ...)
+│   │   ├── Logo.tsx              # logo partagé (BrandMark + favicon dynamique via next/og)
+│   │   ├── NavLink.tsx           # Link Next + aria-current automatique, cva variants pill / tab
+│   │   ├── SearchInput.tsx       # search input shared (Suspense + Skeleton + clear + submit-on-Enter)
 │   │   └── typography.tsx        # Heading + Text avec variants cva (single source of truth typo)
 │   ├── hooks/
-│   │   └── useMounted.ts         # guard d'hydratation (useSyncExternalStore)
-│   ├── layout/                   # Shell app — un dossier par section, prêt pour Footer
-│   │   └── Header/
-│   │       ├── Header.tsx        # composition minimaliste
+│   │   ├── useMounted.ts         # guard d'hydratation (useSyncExternalStore)
+│   │   └── useSearchParam.ts     # URL sync (value/setValue/commit/clear) + useOptimistic anti-flash
+│   ├── layout/                   # Shell app — Header (desktop) + BottomTabBar (mobile/tablet)
+│   │   ├── Header/
+│   │   │   ├── Header.tsx        # composition minimaliste, visible partout mais contenu condensé <lg:
+│   │   │   └── components/
+│   │   │       ├── BrandMark.tsx         # logo + brand name (Link vers home)
+│   │   │       ├── Navigation.tsx        # nav horizontale (NavLink variant="pill") visible lg+ seulement
+│   │   │       └── HeaderActions/
+│   │   │           ├── HeaderActions.tsx
+│   │   │           └── components/
+│   │   │               ├── ThemeToggle.tsx       # dropdown Light/Dark/System + Skeleton pre-hydration
+│   │   │               ├── UserMenu.tsx          # avatar + dropdown
+│   │   │               └── NotificationsButton.tsx
+│   │   └── BottomTabBar/         # nav mobile/tablet <lg:, fixe en bas de viewport
+│   │       ├── BottomTabBar.tsx  # 3 items nav (NavLink variant="tab") + bouton loupe search
 │   │       └── components/
-│   │           ├── BrandMark.tsx         # logo + brand name (Link vers home)
-│   │           ├── Navigation.tsx        # liens nav avec état actif via usePathname
-│   │           ├── HeaderSearch.tsx      # search URL-backed active sur /tools
-│   │           ├── MobileMenu.tsx        # drawer Sheet sous md:
-│   │           └── HeaderActions/
-│   │               ├── HeaderActions.tsx # wrapper cluster droit
-│   │               └── components/
-│   │                   ├── ThemeToggle.tsx       # dropdown Light/Dark/System
-│   │                   ├── UserMenu.tsx          # avatar + dropdown
-│   │                   └── NotificationsButton.tsx
+│   │           └── SearchSheet.tsx        # Drawer vaul qui monte conditionnellement <SearchInput autoFocus />
 │   ├── lib/
 │   │   ├── format.ts             # formatCurrency / formatCurrencyCompact / formatRelativeTime + constantes locales (MS_PER_DAY, DAYS_PER_MONTH, ...)
 │   │   ├── queryClient.ts        # factories serveur/client + QUERY_STALE_TIME_MS + getServerQueryClient
@@ -159,6 +165,7 @@ src/
 │       └── commonSchemas.ts      # primitives Zod génériques (idSchema, urlSchema, emailSchema, isoDateTimeSchema, ...)
 │
 └── config/                       # configuration statique
+    ├── actionKeys.ts             # map de keyboard keys (ENTER, ...) pour éviter les string literals
     ├── brand.ts                  # BRAND { name, productName, tagline }
     ├── env.ts                    # isDev / isProd / isTest (tree-shaken au build)
     ├── fonts.ts                  # Inter (liée à --font-sans)
@@ -219,9 +226,9 @@ Le parcours utilisateur cible est l'**admin IT** qui arrive sur le Dashboard dep
 
 **Pattern de navigation cohérent cross-page** :
 
-- **`Header` partagé** ([src/shared/layout/Header/Header.tsx](src/shared/layout/Header/Header.tsx)) avec sticky top, backdrop blur, et actif déterminé par `usePathname` → état visuel `bg-accent` sur l'item courant.
-- **Search bar dans le header** qui s'adapte au contexte — active sur `/tools` (filtre le catalogue via `?search=`), disabled ailleurs (placeholder générique, pas de fonctionnalité fantôme).
-- **Mobile menu** (drawer Sheet) sous `md:` — mêmes nav items, fermeture automatique au click.
+- **`Header` partagé** ([src/shared/layout/Header/Header.tsx](src/shared/layout/Header/Header.tsx)) avec sticky top, backdrop blur. Sous `lg:` le header est condensé (BrandMark + HeaderActions uniquement), la nav et la search sont déléguées au tab bar.
+- **Search bar contextuelle** — composant unique `<SearchInput>` ([src/shared/components/SearchInput.tsx](src/shared/components/SearchInput.tsx)) réutilisé dans le header desktop ET injecté dans le drawer mobile. Active sur `/tools` (filtre le catalogue via `?search=`), disabled ailleurs. Submit-on-Enter (pas de live-search) : URL mise à jour uniquement quand l'user valide → 1 seule requête RSC par recherche.
+- **Mobile/tablet nav** (`<BottomTabBar>` sous `lg:`) — fixe en bas de viewport, 3 items nav + bouton loupe. Tap loupe → `<Drawer>` vaul se slide-up avec l'input auto-focus. Enter commit + ferme le drawer. Pattern modal standard (l'overlay bloque l'interaction avec le reste pendant que le drawer est ouvert).
 - **Theme toggle** (Light / Dark / System) via `next-themes`, persisté dans localStorage et synchronisé avec la préférence OS.
 - **Favicon dynamique** ([src/app/icon.tsx](src/app/icon.tsx)) généré via `next/og` — même Zap + gradient violet→indigo que le `<BrandMark>` du header, zéro binaire à maintenir.
 
@@ -241,11 +248,13 @@ Toutes les URLs de l'app passent par un **helper `path()` typé**, aucune URL ha
 
 ```ts
 export const routes = {
-    home: { path: '/', nav: { label: 'Dashboard' } },
-    tools: { path: '/tools', nav: { label: 'Tools' } },
-    analytics: { path: '/analytics', nav: { label: 'Analytics' } },
+    home: { path: '/', nav: { label: 'Dashboard', icon: LayoutDashboard } },
+    tools: { path: '/tools', nav: { label: 'Tools', icon: Wrench } },
+    analytics: { path: '/analytics', nav: { label: 'Analytics', icon: BarChart3 } },
 } satisfies RoutesMap;
 ```
+
+`NavMeta` inclut `icon: LucideIcon` — utilisé par le `<BottomTabBar>` mobile pour afficher les pictos, et disponible côté desktop si on veut plus tard enrichir la `<Navigation>`.
 
 Les entrées qui portent une prop `nav` apparaissent dans le `Navigation` principal (dérivé à la volée via `navEntries`, ordre = ordre de déclaration). Une route "cachée" (ex: `toolDetail`, `login`) serait déclarée sans `nav` et n'apparaîtrait pas dans le header.
 
@@ -392,7 +401,7 @@ Un token `--container-app: 1400px` défini dans `@theme inline` de `globals.css`
 - **Dashboard** : 4 KPI cards en `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`. Table Recent Tools : scroll horizontal natif via `overflow-x-auto` (inclus dans le wrapper du `Table` shadcn) sur petits écrans, full width desktop.
 - **Tools** : toolbar filters en `flex flex-wrap gap-2` → les dropdowns wrap naturellement en 2 lignes sur petits écrans. Table : même stratégie scroll horizontal. Page header en `flex-col` (stacked) sur mobile, `sm:flex-row` avec le bouton "Add Tool" aligné à droite dès sm:.
 - **Analytics** : Budget card full width. Les 2 pies en `grid gap-6 md:grid-cols-2` — stackées mobile, side-by-side dès tablet. Bar chart `h-80 w-full` toujours full width, les labels de tools sont tronqués via `YAxis width={110}`.
-- **Header** : `<MobileMenu>` drawer (Sheet) sous `md:`, `<Navigation>` horizontale inline `md:` et plus. `<HeaderSearch>` disparaît sous `md:` (accessible via le drawer in future iteration).
+- **Header & navigation** : Desktop ≥`lg:` → `<Header>` complet (BrandMark + Navigation + SearchInput + HeaderActions). Mobile/tablet <`lg:` → `<Header>` condensé (BrandMark + HeaderActions seulement) + `<BottomTabBar>` fixe en bas (3 onglets nav + loupe). La loupe ouvre un `<Drawer>` vaul qui monte conditionnellement `<SearchInput autoFocus />` — focus immédiat à l'open sans setTimeout (composant non monté tant que le drawer est fermé, autoFocus HTML natif déclenché à l'insertion dans le DOM).
 
 ### Touch-friendly partout
 
@@ -425,10 +434,10 @@ Tous les boutons / inputs respectent la guideline touch target (~44×44 CSS pixe
 
 - **Inter via `next/font/google`** → preload + self-hosted, zéro flash of unstyled text
 - **`next-themes` pre-hydration script** injecté dans `<head>` → zéro flash of wrong theme au premier paint
-- **`useSyncExternalStore`** pour le hook `useMounted` (hydration guard lint-clean, évite la règle `react-hooks/set-state-in-effect` de React 19.2)
 - **`useMemo` sur les data dérivées** (filters combinés, groupBy + sum, derived options pour les Select)
-- **Debounce 300ms** sur la search bar pour éviter le thrashing de `router.replace` à chaque frappe
-- **Early return dans les effets qui écrivent l'URL** pour éviter les boucles RSC infinies (pattern `searchParams.get(key) === value ? skip : update`)
+- **Search submit-on-Enter** — typing vit dans un state local (`pendingValue`), push URL uniquement au `commit()`. Zéro debounce, zéro `router.replace` spammé, **1 seule requête RSC par recherche**
+- **`useOptimistic` dans `useSearchParam`** — entre le `router.replace` et la mise à jour effective de `searchParams`, la valeur committée est affichée de façon optimiste → zéro flash de l'ancienne valeur sur l'input
+- **`useSyncExternalStore` pour `useMounted`** — hydration guard lint-clean, évite la règle `react-hooks/set-state-in-effect` de React 19.2
 
 ### Images
 
@@ -486,7 +495,7 @@ Icônes d'outils via `<img>` + fallback `onError` qui affiche l'initiale (compos
 ### Integration tests (Vitest + MSW)
 
 - Flows data-dépendants : `RecentToolsTable` avec data mockée, `KpisSection` avec les 3 queries parallèles
-- URL ↔ UI : `HeaderSearch` + `ToolsTable` (tape, debounce, URL update, table filter)
+- URL ↔ UI : `SearchInput` + `ToolsTable` (tape → Enter → URL update → table filter, + clear button qui push URL vide)
 - Mutations end-to-end : `ToolFormDialog` (create) → `toolsService.create` → invalidate → refetch
 
 ### E2E tests (Playwright)
@@ -550,13 +559,14 @@ Les données proviennent d'un JSON server mis à disposition dans le cadre du te
 - [x] **Jour 0 — Foundation (providers)** : `AppProviders` (next-themes + TanStack Query + Devtools + Toaster), layout root avec `suppressHydrationWarning`, configuration `NEXT_PUBLIC_API_URL`, police Inter, constante `BRAND`
 - [x] **Jour 0 — Foundation (API layer)** : `RequestManager`, 5 DTOs, 5 services, validators Zod génériques + enums de domaine, factory `getServerQueryClient` per-request
 - [x] **Jour 0 — Foundation (query options)** : 5 namespaces de query options partagées serveur/client, adaptateur `unwrapResponse`
-- [x] **Jour 6 — Shell applicatif** : `Header`, `Navigation`, `ThemeToggle`, `UserMenu`, `MobileMenu`, `BrandMark`
+- [x] **Jour 6 — Shell applicatif** : `Header`, `Navigation`, `ThemeToggle`, `UserMenu`, `BrandMark`
 - [x] **Jour 6 — Dashboard KPIs** : 4 KPI cards alimentés par 3 queries parallèles, prefetch + Suspense + skeleton
 - [x] **Jour 6 — Recent Tools** : table 5 colonnes, `StatusBadge`, `ToolIcon`, stratégie d'over-fetch pour compenser la junk data
-- [x] **Jour 7 — Tools catalog (display)** : page `/tools`, table 8 colonnes, recherche URL-backed, `HeaderSearch` debouncé
+- [x] **Jour 7 — Tools catalog (display)** : page `/tools`, table 8 colonnes, recherche URL-backed via `SearchInput` + `useSearchParam` (submit-on-Enter + `useOptimistic`)
 - [x] **Jour 7 — Tools filters** : toolbar avec 3 dropdowns (Department / Status / Category) + range Min/Max Cost, URL-backed, `Clear filters` conditionnel
 - [x] **Jour 7 — Tools management (CRUD per-row)** : Add / Edit / Delete / Toggle status via `ToolForm` (react-hook-form + standardSchemaResolver), mutations TanStack Query avec invalidation `['tools']` et toasts Sonner
 - [ ] **Jour 7 — Tools bulk ops** (optionnel) : multi-select + bulk actions
 - [x] **Jour 8 — Analytics (core)** : 4 sections (`BudgetOverviewCard`, `DepartmentCostChart`, `StatusDistributionChart`, `TopExpensiveToolsChart`), shadcn Chart + Recharts, palette `--chart-1..5` passée du grayscale au coloré OKLCH
 - [x] **Jour 8 — Polish (cross-page nav + error handling)** : slices des 3 charts Analytics cliquables (Department → `/tools?department=`, Status → `/tools?status=`, Top Expensive → `/tools?search=`), `error.tsx` global (Try again / Back to dashboard), `not-found.tsx` 404 branded
+- [x] **Post-J8 — Mobile shell & refacto search** : `<BottomTabBar>` (nav fixe mobile/tablet avec 3 items + loupe search dans un `<Drawer>` vaul), `<SearchInput>` + `useSearchParam` déplacés dans `shared/` (réutilisables cross-feature), passage live-search debouncé → submit-on-Enter avec `useOptimistic`, `<NavLink>` avec cva variants `pill`/`tab`, utility `btn-link` + tokens typo `text-link` / `text-link-sm`, alignement breakpoints brief (mobile <`sm:`, tablet `sm:`-`lg:`, desktop ≥`lg:`), suppression hors-brief (`MobileMenu`, route `settings`)
 - [ ] **Jour 8 — Analytics (optionnel)** : usage analytics (adoption rates, most/least used, growth trends) + insights (unused tool alerts, ROI projections)
