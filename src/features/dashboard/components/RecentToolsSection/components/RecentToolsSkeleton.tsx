@@ -13,6 +13,7 @@ export const RecentToolsSkeleton = () => {
                     <TableHead className="text-right">Users</TableHead>
                     <TableHead className="text-right">Monthly Cost</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="w-10" aria-label="Actions" />
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -35,6 +36,9 @@ export const RecentToolsSkeleton = () => {
                         </TableCell>
                         <TableCell>
                             <Skeleton className="h-5 w-16 rounded-full" />
+                        </TableCell>
+                        <TableCell>
+                            <Skeleton className="size-8 rounded" />
                         </TableCell>
                     </TableRow>
                 ))}

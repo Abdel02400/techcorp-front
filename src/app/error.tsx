@@ -2,7 +2,6 @@
 
 import { AlertTriangle, Home, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect } from 'react';
 import { isDev } from '@/config/env';
 import { Button } from '@/shared/components/ui/button';
 import { path } from '@/shared/router';
@@ -13,10 +12,6 @@ interface ErrorPageProps {
 }
 
 const ErrorPage = ({ error, reset }: ErrorPageProps) => {
-    useEffect(() => {
-        if (isDev) console.error('[error boundary]', error);
-    }, [error]);
-
     return (
         <main className="flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
             <div className="flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">

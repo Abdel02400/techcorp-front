@@ -4,6 +4,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { StatusBadge } from '@/features/tools/components/StatusBadge';
+import { ToolActionsDropdown } from '@/features/tools/components/ToolActionsDropdown';
 import { ToolIcon } from '@/features/tools/components/ToolIcon';
 import { toolsQueries } from '@/features/tools/queries/toolsQueries';
 import { Button } from '@/shared/components/ui/button';
@@ -37,7 +38,7 @@ export const RecentToolsContent = () => {
             let comparison = 0;
             if (sort.key === 'name') comparison = a.name.localeCompare(b.name);
             else if (sort.key === 'department') comparison = (a.owner_department ?? '').localeCompare(b.owner_department ?? '');
-            else comparison = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+            else comparison = new Date(a.updated_at ?? 0).getTime() - new Date(b.updated_at ?? 0).getTime();
             return sort.direction === 'asc' ? comparison : -comparison;
         });
         return copy;
@@ -71,6 +72,7 @@ export const RecentToolsContent = () => {
                         <TableHead className="text-right">Users</TableHead>
                         <TableHead className="text-right">Monthly Cost</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead className="w-10" aria-label="Actions" />
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -87,6 +89,9 @@ export const RecentToolsContent = () => {
                             <TableCell className="text-right tabular-nums">{formatCurrency(tool.monthly_cost)}</TableCell>
                             <TableCell>
                                 <StatusBadge status={tool.status} />
+                            </TableCell>
+                            <TableCell>
+                                <ToolActionsDropdown tool={tool} />
                             </TableCell>
                         </TableRow>
                     ))}

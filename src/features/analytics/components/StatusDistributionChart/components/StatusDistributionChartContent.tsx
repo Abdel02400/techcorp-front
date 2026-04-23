@@ -34,7 +34,7 @@ export const StatusDistributionChartContent = () => {
 
     return (
         <CardContent className="flex flex-col gap-4">
-            <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-64">
+            <ChartContainer config={chartConfig} className="mx-auto aspect-square w-full max-w-64">
                 <PieChart>
                     <ChartTooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
                     <Pie

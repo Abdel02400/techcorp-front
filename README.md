@@ -573,13 +573,36 @@ GitHub Actions qui bloque les PR sur : `pnpm lint` + `pnpm format:check` + `pnpm
 
 ### Court terme (itérations 2-3)
 
+**Features produit**
+
 - **Bulk operations dans Tools** (multi-select + bulk delete / bulk toggle / bulk archive) — déjà structuré dans la roadmap
-- **Cross-page navigation depuis Analytics** : click sur un slice du `DepartmentCostChart` → `/tools?department=X`, click sur `StatusDistributionChart` → `/tools?status=X` (commit de polish planifié juste après ce README)
 - **View details dédié** (Sheet read-only) pour voir un tool sans ouvrir le form d'édition
-- ~~**Error boundaries** autour des Suspense~~ ✅ fait sur Analytics + Dashboard + Tools — chaque bloc data-fetching a son propre `ErrorBoundary` (react-error-boundary) + `QueryErrorResetBoundary` de TanStack Query via les primitives partagées `<Block>` (hors Card) et `<BlockCard>` (dans Card). Si une query plante, seul ce bloc affiche `<BlockRetry>` (icône + message + bouton Retry), les autres blocs restent fonctionnels.
 - **Time range picker** sur Analytics si le JSON server expose un jour `/analytics?from=...&to=...`
-- **Tests unitaires** sur les helpers pures et les primitives réutilisées
-- **Aligner le header du `RecentToolsSection`** : depuis l'ajout du sort + pagination sur `RecentToolsTable`, le tableau affiche tous les tools (pas seulement les 8 récents). Le sous-titre "Last 30 days" devient trompeur — à remplacer par un compteur total (ex: "42 tools") ou retirer, selon la direction produit
+- **Live-search** — repasser de submit-on-Enter à un live-search debouncé (250-300ms) sur `/tools` pour une UX plus réactive. L'infra est déjà prête (`useOptimistic` dans `useSearchParam` gère l'anti-flash), il suffit de réintégrer un debounce sur `setValue` et de push l'URL à chaque frappe valide
+
+**Refacto / DRY**
+
+- **`<DataTable>` générique** — `RecentToolsContent` et `ToolsTableContent` partagent 90% du code (colonnes identiques pour Tool/Department/Users/Cost/Status + Actions, même `StatusBadge`/`ToolIcon`/`ToolActionsDropdown`). Extraire un composant commun avec props pour toggle les features (sort, pagination, filter-from-url, columns visibility) éliminerait la duplication et simplifierait l'ajout futur de tables (ex: Users table, Departments table)
+- **Pagination partagée** — la logique `page + totalPages + Prev/Next + clamp` dans `RecentToolsContent` est candidate à extraction en composant `<TablePagination>` ou hook `usePagination(items, { pageSize })`. Même pour la URL-backed pagination future
+- **Helpers de filtering/sorting** — `matchesSearch`, le compose de filters dans `ToolsTableContent`, la sort function dans `RecentToolsContent` → extraire en `features/tools/lib/filter.ts` et `sort.ts` (testables isolément, réutilisables si on ajoute d'autres tables)
+- **`useUrlParam` générique** — `useSearchParam` (tools-spécifique, hardcodé `/tools?search=`) pourrait se généraliser en hook paramétrable par path + clé + options de debounce/commit. Utilisable ensuite pour n'importe quel filter URL-backed
+- **Aligner le header du `RecentToolsSection`** — depuis l'ajout du sort + pagination, le tableau affiche tous les tools (pas seulement les 8 récents). Le sous-titre "Last 30 days" devient trompeur — à remplacer par un compteur total (ex: "42 tools") ou retirer, à trancher avec la direction produit
+
+**Perf / render**
+
+- **`React.memo` sur les cellules / rows stables** — `ToolRow` (à extraire), `KpiCard`, `StatusBadge` : rendering une centaine de rows d'une table = bcp de reconciliation. `memo` + clés stables = gain net
+- **`useCallback` sur les handlers** passés aux enfants (onRowClick, onSortChange) pour éviter le re-render en cascade quand un parent re-rend
+- **Virtualisation** (`@tanstack/react-virtual`) pour les tables qui dépassent ~100 items — rend uniquement ce qui est dans le viewport
+- **`React.lazy` + dynamic imports** sur les dialogs (`ToolFormDialog`, `DeleteToolDialog`) → ils ne sont chargés dans le bundle que quand l'user clique Add/Edit/Delete. Gain perceptible sur le premier paint de `/tools`
+- **Bundle analyzer** (`@next/bundle-analyzer`) pour traquer les gros packages et valider le tree-shaking
+
+**Qualité / tests**
+
+- **Tests unitaires** (Vitest) sur les helpers pures : `formatCurrency`, `formatRelativeTime`, le parseur tolérant dans `toolListSchema`, les helpers `buildKey` / `unwrapResponse` / `matchesSearch`
+- **Component tests** (Testing Library) sur `StatusBadge`, `KpiCard`, `ToolForm` (validation Zod), `ToolActionsDropdown` (chaque item déclenche la bonne mutation)
+- **Integration tests** (Vitest + MSW) sur `ToolsTableContent` (URL filters → rows filtrées), `KpisSection` (3 queries parallèles), mutations end-to-end avec invalidation
+- **Storybook** pour isoler les composants du design system (`StatusBadge`, `KpiCard`, `SearchInput`, `NavLink`) sans dépendance à l'app complete
+- **CI GitHub Actions** : `lint` + `format:check` + `build` + (ensuite) `test` + `e2e` bloquants sur les PRs
 
 ### Moyen terme (produit)
 
@@ -627,4 +650,7 @@ Les données proviennent d'un JSON server mis à disposition dans le cadre du te
 - [x] **Jour 8 — Analytics (core)** : 4 sections (`BudgetOverviewCard`, `DepartmentCostChart`, `StatusDistributionChart`, `TopExpensiveToolsChart`), shadcn Chart + Recharts, palette `--chart-1..5` passée du grayscale au coloré OKLCH
 - [x] **Jour 8 — Polish (cross-page nav + error handling)** : slices des 3 charts Analytics cliquables (Department → `/tools?department=`, Status → `/tools?status=`, Top Expensive → `/tools?search=`), `error.tsx` global (Try again / Back to dashboard), `not-found.tsx` 404 branded
 - [x] **Post-J8 — Mobile shell & refacto search** : `<BottomTabBar>` (nav fixe mobile/tablet avec 3 items + loupe search dans un `<Drawer>` vaul), `<SearchInput>` + `useSearchParam` déplacés dans `shared/` (réutilisables cross-feature), passage live-search debouncé → submit-on-Enter avec `useOptimistic`, `<NavLink>` avec cva variants `pill`/`tab`, utility `btn-link` + tokens typo `text-link` / `text-link-sm`, alignement breakpoints brief (mobile <`sm:`, tablet `sm:`-`lg:`, desktop ≥`lg:`), suppression hors-brief (`MobileMenu`, route `settings`)
+- [x] **Post-J8 — Block primitives + unified API resources** : `<Block>` / `<BlockCard>` / `<BlockRetry>` dans `shared/components/` (ErrorBoundary + QueryErrorResetBoundary + Suspense, retry ciblé au bloc qui plante). Appliqué aux 8 blocs data-fetching (4 Analytics + 2 Dashboard + 2 Tools). `shared/api/resources.ts` fusionne `apiEndpoints` + `queryKeys` en une seule map avec dual accessor (`.key` + `.endpoint`). `buildKey` helper `<const>` pour tuples readonly sans `as const`. Sous-dossiers dédiés par bloc dans `features/{analytics,dashboard,tools}/components/`
+- [x] **Post-J8 — Dashboard polish** : sort (Tool / Department) + pagination client-side (10/page) sur le tableau Recent Tools, colonne Actions dropdown (Edit / Enable-Disable / Delete) identique à celle de `/tools`
+- [x] **Post-J8 — Safeguards visuels** : `ToolIcon` valide `icon_url` via `new URL(...)` avant d'instancier le `<img>` → plus de requêtes 404 bruyantes sur des URLs dirty côté API. `minWidth={0}` + `minHeight={0}` par défaut sur le `<ResponsiveContainer>` de shadcn Chart + sizing explicite (`w-full max-w-64 aspect-square`) sur les pie charts → warning Recharts `width(0) height(0)` silencé
 - [ ] **Jour 8 — Analytics (optionnel)** : usage analytics (adoption rates, most/least used, growth trends) + insights (unused tool alerts, ROI projections)
